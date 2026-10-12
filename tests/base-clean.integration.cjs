@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),config=JSON.parse(fs.readFileSync(path.join(root,'config.json'))),runtime=path.dirname(config.playwright),{chromium}=require(config.playwright);
+const temp=path.join(root,'test-results','base-clean-'+crypto.randomUUID()),delay=ms=>new Promise(r=>setTimeout(r,ms));
+fs.mkdirSync(temp,{recursive:true});let server,browser;
+(async()=>{try{
+ const fd=fs.openSync(path.join(temp,'server.log'),'a');server=spawn(process.execPath,[path.join(root,'server.cjs')],{cwd:root,env:{...process.env,MGT_DATA_ROOT:path.join(temp,'data')},windowsHide:true,stdio:['ignore',fd,fd]});fs.closeSync(fd);
+ const instance=crypto.createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);let url;
+ for(let i=0;i<200;i++){try{const data=JSON.parse(fs.readFileSync(path.join(temp,'data',instance,'running.json')));if(data.pid===server.pid){url=data.url;break;}}catch{}await delay(100);}assert(url,'Servidor no disponible');
+ browser=await chromium.launch({executablePath:process.env.MGT_TEST_BROWSER||config.chromium,headless:true,env:{...process.env,TEMP:temp,TMP:temp}});
+ const page=await browser.newPage();page.on('dialog',d=>d.accept('1'));await page.goto(url);await page.waitForFunction(()=>initialized&&ready);if(await page.locator('#welcomeDialog').isVisible())await page.click('#startWelcome');
+ assert.deepEqual(await page.evaluate(()=>({mainPresent,custom,clips:MGTMGTModel.snapshot().length,general:!$('generalInspector').hidden,legacy:$('mainInspector').hidden})),{mainPresent:false,custom:null,clips:0,general:true,legacy:true});
+ const doc={version:3,name:'Prueba MGT',parameters:[],html:'<div id="mark">MGT</div>',css:'#mark{color:white;font-size:120px}',render:'',recommended:{duration:1}};
+ await page.evaluate(d=>{state=Scene.normalize({...state,duration:5});refreshLabels();rebuild();MGTMGTModel.add(d,1,0);MGTMGTModel.add({...d,name:'Segundo MGT'},1,120);},doc);
+ await page.waitForFunction(()=>MGTMGTModel.snapshot().length===2&&!MGTTrackUI.preparing());
+ assert.equal(await page.locator('.mgt-timeline-clip').count(),2);
+ assert.equal(await page.evaluate(()=>!$('overlayInspector').hidden),true);
+ const visibility=await page.evaluate(()=>{const id=MGTMGTModel.snapshot()[0].id;return [0,59,60,119,120].map(f=>{showFrame(f);return ![...document.querySelectorAll('.mgt-clip-view')].find(v=>v.title.includes('Prueba MGT')).hidden;});});
+ assert.deepEqual(visibility,[true,true,false,false,false]);
+ await page.evaluate(()=>{const c=MGTMGTModel.snapshot()[1];MGTTrackUI.select(c.id);$('overlayStart').value='3';$('overlayStart').dispatchEvent(new Event('change'));});
+ assert.equal(await page.evaluate(()=>MGTMGTModel.snapshot()[1].start),180);
+ await page.evaluate(()=>{MGTTrackUI.select(MGTMGTModel.snapshot()[0].id);$('overlayRemove').click();});
+ assert.equal(await page.evaluate(()=>MGTMGTModel.snapshot().length),1);
+ await page.evaluate(()=>{MGTTrackUI.select(null);$('projectAspect').value='classic';$('projectAspect').dispatchEvent(new Event('change'));});
+ assert.equal(await page.evaluate(()=>state.aspect),'classic');assert.equal(await page.evaluate(()=>!$('generalInspector').hidden),true);
+ await page.click('#openCanvas');assert.equal(await page.locator('#projectCanvasSize').textContent(),'1440 × 1080 px');await page.click('#closeCanvas');
+ const layers=require('../layer-render-097.cjs').normalize(await page.evaluate(()=>({...MGTTrackUI.capture(),mainDuration:mgDuration,mainStart:mgStart,mainPresent,flags:MGTTrackState.capture()})),await page.evaluate(()=>structuredClone(state)));
+ assert.equal(layers.mainPresent,false);assert.equal(layers.mgt.length,1);assert.equal(layers.mgt[0].start,180);
+ console.log('Inicio vacío, clips MGT, movimiento, eliminación, ajustes generales y 4:3 verificados.');
+}finally{await browser?.close();server?.kill();}})().catch(e=>{console.error(e);process.exitCode=1;});

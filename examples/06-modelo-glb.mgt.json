@@ -1,0 +1,277 @@
+{
+  "version": 4,
+  "name": "GLB · modelo con textura",
+  "parameters": [
+    {
+      "id": "cameraX",
+      "label": "Cámara · posición X",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraY",
+      "label": "Cámara · posición Y",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraDistance",
+      "label": "Cámara · distancia",
+      "type": "number",
+      "default": 1600,
+      "min": 500,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraYaw",
+      "label": "Cámara · giro horizontal (°)",
+      "type": "number",
+      "default": 0,
+      "min": -90,
+      "max": 90,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraPitch",
+      "label": "Cámara · inclinación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -60,
+      "max": 60,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraRoll",
+      "label": "Cámara · rotación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraFov",
+      "label": "Cámara · campo de visión (°)",
+      "type": "number",
+      "default": 45,
+      "min": 15,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionX",
+      "label": "Modelo · position X",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionY",
+      "label": "Modelo · position Y",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionZ",
+      "label": "Modelo · position Z",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationX",
+      "label": "Modelo · rotation X",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationY",
+      "label": "Modelo · rotation Y",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationZ",
+      "label": "Modelo · rotation Z",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleX",
+      "label": "Modelo · scale X",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleY",
+      "label": "Modelo · scale Y",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleZ",
+      "label": "Modelo · scale Z",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelSize",
+      "label": "Modelo · tamaño inicial",
+      "type": "number",
+      "default": 500,
+      "min": 50,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelVisible",
+      "label": "Modelo · visible",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "modelFile",
+      "label": "Modelo · archivo GLB",
+      "type": "model",
+      "default": "cube"
+    }
+  ],
+  "html": "",
+  "css": "",
+  "render": "",
+  "scene3d": {
+    "version": 1,
+    "camera": {
+      "x": {
+        "param": "cameraX"
+      },
+      "y": {
+        "param": "cameraY"
+      },
+      "distance": {
+        "param": "cameraDistance"
+      },
+      "yaw": {
+        "param": "cameraYaw"
+      },
+      "pitch": {
+        "param": "cameraPitch"
+      },
+      "roll": {
+        "param": "cameraRoll"
+      },
+      "fov": {
+        "param": "cameraFov"
+      }
+    },
+    "objects": [
+      {
+        "id": "model",
+        "type": "model",
+        "resource": {
+          "param": "modelFile"
+        },
+        "position": {
+          "x": {
+            "param": "modelPositionX"
+          },
+          "y": {
+            "param": "modelPositionY"
+          },
+          "z": {
+            "param": "modelPositionZ"
+          }
+        },
+        "rotation": {
+          "x": {
+            "param": "modelRotationX"
+          },
+          "y": {
+            "param": "modelRotationY"
+          },
+          "z": {
+            "param": "modelRotationZ"
+          }
+        },
+        "scale": {
+          "x": {
+            "param": "modelScaleX"
+          },
+          "y": {
+            "param": "modelScaleY"
+          },
+          "z": {
+            "param": "modelScaleZ"
+          }
+        },
+        "width": {
+          "param": "modelSize"
+        },
+        "visible": {
+          "param": "modelVisible"
+        }
+      }
+    ]
+  },
+  "models": {
+    "cube": {
+      "name": "cubo-material.glb",
+      "mime": "model/gltf-binary",
+      "data": "Z2xURgIAAADYBwAAJAQAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAiLCJnZW5lcmF0b3IiOiJNR1QgYXV0aG9yZWQgZml4dHVyZSJ9LCJzY2VuZSI6MCwic2NlbmVzIjpbeyJub2RlcyI6WzBdfV0sIm5vZGVzIjpbeyJtZXNoIjowLCJ0cmFuc2xhdGlvbiI6WzcsNCwtMl19XSwibWVzaGVzIjpbeyJwcmltaXRpdmVzIjpbeyJhdHRyaWJ1dGVzIjp7IlBPU0lUSU9OIjowLCJOT1JNQUwiOjEsIlRFWENPT1JEXzAiOjJ9LCJpbmRpY2VzIjozLCJtYXRlcmlhbCI6MH1dfV0sImJ1ZmZlcnMiOlt7ImJ5dGVMZW5ndGgiOjkxOX1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjoyODh9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0IjoyODgsImJ5dGVMZW5ndGgiOjI4OH0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjU3NiwiYnl0ZUxlbmd0aCI6MTkyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NzY4LCJieXRlTGVuZ3RoIjo3Mn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjg0MCwiYnl0ZUxlbmd0aCI6Nzl9XSwiYWNjZXNzb3JzIjpbeyJidWZmZXJWaWV3IjowLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MjQsInR5cGUiOiJWRUMzIiwibWluIjpbLTAuNSwtMC41LC0wLjVdLCJtYXgiOlswLjUsMC41LDAuNV19LHsiYnVmZmVyVmlldyI6MSwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjI0LCJ0eXBlIjoiVkVDMyJ9LHsiYnVmZmVyVmlldyI6MiwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjI0LCJ0eXBlIjoiVkVDMiJ9LHsiYnVmZmVyVmlldyI6MywiY29tcG9uZW50VHlwZSI6NTEyMywiY291bnQiOjM2LCJ0eXBlIjoiU0NBTEFSIn1dLCJpbWFnZXMiOlt7ImJ1ZmZlclZpZXciOjQsIm1pbWVUeXBlIjoiaW1hZ2UvcG5nIn1dLCJ0ZXh0dXJlcyI6W3sic291cmNlIjowfV0sIm1hdGVyaWFscyI6W3sibmFtZSI6Ik1hdGVyaWFsIG9yaWdpbmFsIiwicGJyTWV0YWxsaWNSb3VnaG5lc3MiOnsiYmFzZUNvbG9yVGV4dHVyZSI6eyJpbmRleCI6MH0sIm1ldGFsbGljRmFjdG9yIjowLCJyb3VnaG5lc3NGYWN0b3IiOjAuNjV9fV19ICAgmAMAAEJJTgAAAAA/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAvwAAAL8AAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AACAPwAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAIA/AACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AACAPwAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAIA/AACAPwAAAAAAAAAAAACAPwAAAAAAAAIAAQACAAMAAQAEAAYABQAGAAcABQAIAAoACQAKAAsACQAMAA4ADQAOAA8ADQAQABIAEQASABMAEQAUABYAFQAWABcAFQCJUE5HDQoaCgAAAA1JSERSAAAAAgAAAAIIBgAAAHK2DSQAAAAWSURBVHicY/h/QuO/xoI7/xlABIgDAGIjCyOy0/vmAAAAAElFTkSuQmCCAA=="
+    }
+  },
+  "recommended": {
+    "duration": 3,
+    "aspect": "horizontal",
+    "resolution": 720
+  }
+}

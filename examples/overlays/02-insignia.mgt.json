@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "name": "Overlay · insignia",
+  "seed": 1,
+  "parameters": [
+    {
+      "id": "title",
+      "label": "Texto",
+      "type": "text",
+      "default": "Otra idea"
+    },
+    {
+      "id": "color",
+      "label": "Color",
+      "type": "color",
+      "default": "#d4b1ff"
+    },
+    {
+      "id": "y",
+      "label": "Posición vertical (%)",
+      "type": "number",
+      "default": 20,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "size",
+      "label": "Tamaño",
+      "type": "number",
+      "default": 80,
+      "min": 20,
+      "max": 200,
+      "step": 1,
+      "control": "slider"
+    }
+  ],
+  "html": "<div id=\"overlayTitle\"></div>",
+  "css": "html,body{background:transparent}#overlayTitle{position:absolute;left:50%;transform:translate(-50%,-50%);font-family:Arial;text-align:center;white-space:pre-wrap;font-weight:bold;max-width:90%;}",
+  "render": "const el=ctx.root.querySelector('#overlayTitle');el.textContent=ctx.params.title;Object.assign(el.style,{top:ctx.params.y*ctx.height/100+'px',fontSize:ctx.params.size*ctx.height/1080+'px',color:ctx.params.color,opacity:String(Math.min(1,ctx.progress*10,(1-ctx.progress)*10))});",
+  "recommended": {
+    "duration": 1
+  },
+  "metadata": {
+    "description": "Ejemplo de overlay con fondo transparente y parámetros propios."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "chromium": "runtime/chromium/chrome.exe",
+  "dataMode": "local",
+  "port": 43871,
+  "playwright": "runtime/playwright-core",
+  "ffmpeg": "runtime/ffmpeg/ffmpeg.exe"
+}

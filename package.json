@@ -1,0 +1,11 @@
+{
+  "name": "moustache-graphics-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Moustache Graphics Tool: texto y composiciones declarativas con exportación MP4 a 60 FPS",
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "license": "GPL-3.0-or-later"
+}
+

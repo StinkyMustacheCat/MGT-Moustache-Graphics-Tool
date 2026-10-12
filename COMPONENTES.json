@@ -1,0 +1,55 @@
+{
+  "mgt": "1.0.0",
+  "platform": "Windows x64",
+  "node": {
+    "version": "v24.21.0",
+    "source": "https://nodejs.org/dist/v24.21.0/",
+    "archiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541"
+  },
+  "chromium": {
+    "distribution": "Chrome for Testing",
+    "version": "151.0.7922.34",
+    "playwrightRevision": "1234",
+    "source": "https://cdn.playwright.dev/builds/cft/151.0.7922.34/win64/chrome-win64.zip",
+    "notices": "licenses/Chromium-Credits.html"
+  },
+  "playwright": {
+    "version": "1.62.1",
+    "source": "https://github.com/microsoft/playwright"
+  },
+  "ffmpeg": {
+    "version": "9.0.1-essentials_build",
+    "build": "https://www.gyan.dev/ffmpeg/builds/",
+    "source": "https://github.com/FFmpeg/FFmpeg/commit/bf1b838f2a",
+    "details": "licenses/FFmpeg-README.txt"
+  },
+  "windowsLauncher": {
+    "name": "MGT.exe",
+    "source": "scripts/MGT.cs",
+    "license": "GPL-3.0-or-later",
+    "framework": "Windows .NET Framework 4.x (sistema, no redistribuido)"
+  },
+  "three": {
+    "version": "0.180.0",
+    "license": "MIT",
+    "source": "https://github.com/mrdoob/three.js/tree/r180",
+    "notices": "licenses/Three-LICENSE.txt"
+  },
+  "helvetiker": {
+    "source": "Three.js r180 examples/fonts/helvetiker_regular.typeface.json",
+    "license": "Magenta font permission notice",
+    "notices": "licenses/Helvetiker-LICENSE.txt",
+    "data": "scripts/helvetiker_regular.typeface.json"
+  },
+  "gifDecoder": {
+    "source": "public/gifs.js",
+    "license": "GPL-3.0-or-later",
+    "implementation": "Original MGT GIF87a/89a parser, LZW decoder and canvas compositor; no external dependency",
+    "specification": "https://www.w3.org/Graphics/GIF/spec-gif89a.txt"
+  },
+  "animatedSVG": {
+    "source": "public/animated-svg.js",
+    "license": "GPL-3.0-or-later",
+    "implementation": "Original deterministic interpolation and static SVG rasterization; no new dependencies"
+  }
+}

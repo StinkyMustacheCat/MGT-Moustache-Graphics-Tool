@@ -1,0 +1,17 @@
+runtime/
+node_modules/
+config.json
+MGT.exe
+test-results/
+subtitulos/
+exports/
+*.log
+*.pid
+running.json
+browser-profile/
+galeria/*
+*.zip
+*.zip.sha256
+SHA256-MANIFEST.json
+config.local.json
+.DS_Store

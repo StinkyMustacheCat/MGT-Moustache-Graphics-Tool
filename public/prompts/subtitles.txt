@@ -1,0 +1,29 @@
+MGT 1.0.0 · PROMPT ESPECIALIZADO · SUBTÍTULOS
+
+Genera una composición MGT para una animación de subtítulos. Distingue con claridad entre una plantilla visual reutilizable y una composición que ya contiene una transcripción. No transcribas audio, no inventes sincronización por palabra y no pongas la transcripción dentro de `render`.
+
+ENTREGA
+Devuelve un único JSON completo, válido y autocontenido, listo para importar como composición WMGT desde la pestaña Subtítulos. Usa `version:3` o `version:4` según el resto de la composición; incluye `name`, `parameters`, `html`, `css`, `render`, `seed` y `subtitles`. Sin Markdown, comentarios, comas finales, imports, URLs ni fragmentos pendientes. `render` es el cuerpo síncrono que recibe `ctx`; no escribas `function render`, no uses async y no prometas que se transcribió o probó el audio.
+
+SECCIÓN SUBTITLES
+Usa exactamente `subtitles:{version:1,kind,timing,tail,cues}`. `kind` es `template` o `composition`. Una plantilla reutilizable debe usar `kind:"template"` y `cues:[]`; una composición con transcripción usa `kind:"composition"` y al menos un bloque. `timing` es `cue` para tiempos por bloque, `word` si todos los bloques tienen palabras temporizadas o `estimated` si fueron distribuidas proporcionalmente; no presentes tiempos estimados como análisis de audio. `tail` va de 0 a 5 segundos y define la salida visual.
+
+Cada cue es `{start,end,text}` con segundos numéricos, start >= 0, end > start, end <= 3600 y texto de hasta 4000 caracteres. Los cues van ordenados por inicio y no superan 8 bloques simultáneos. Si hay `words`, cada palabra es `{start,end,text}`, está dentro del bloque, va ordenada y la unión de sus textos coincide con el texto del bloque. Máximo 20 000 cues y 60 000 palabras. No guardes datos de audio, WAV, MP4, audioId ni una ruta en esta sección.
+
+RENDER DE SUBTÍTULOS
+El contexto habitual incluye `root`, `params`, `width`, `height`, `frame`, `fps`, `time`, `duration`, `progress`, `seed`, `random(index)`, `editingStop`, `image`, `video`, `gif`, `svgAnimation` y `subtitles`. `ctx.subtitles` ofrece `cues`, `words`, `timing`, `tail` y `at(time,tail)`, que devuelve los bloques activos en el instante indicado. Usa, por ejemplo, `const active = ctx.subtitles.at(ctx.time);`; no incrustes una lista paralela ni ejecutes código de Wordline para volver a leerla. Una plantilla debe funcionar también con varios cues activos y sin cues.
+
+ANIMACIÓN DETERMINISTA
+MGT muestrea a 60 FPS: `N=Math.round(duration*60)`, `frame=0..N-1`, `time=frame/60` y `progress=frame/Math.max(1,N-1)`. Calcula entrada, palabra activa, salida, líneas, resaltados y posiciones desde `ctx.time` y el contenido actual en cada render; soporta saltos hacia atrás. No uses estado acumulado, Math.random, Date, temporizadores, requestAnimationFrame, CSS animations/transitions autónomas, red, promesas ni APIs internas. Todos los controles declarados en `parameters` deben afectar al render.
+
+CONTROLES Y FORMATO
+`parameters` tiene 0–48 controles con ids únicos `^[a-zA-Z][a-zA-Z0-9_]{0,39}$`, labels de hasta 80 caracteres y defaults válidos. Usa `text`, `number` con min/max/step, `color`, `boolean`, `select`, `font` e `image` v3 si corresponde. Declara `recommended` con duración 0.1..3600, aspect `horizontal|vertical|square|classic` y resolution 480, 540, 720, 1080, 1440 o 2160. Para una imagen deja `resources:{}` y un parámetro image con default `""`; no inventes base64.
+
+DISEÑO Y ALCANCE
+Construye el texto con nodos hijos de root y `textContent`; usa HTML/CSS/SVG inline y JavaScript nativo. No cambies posición, tamaño, transform u overflow de root ni uses window.innerWidth/Height. Un fondo editable debe ser un parámetro color y asignarse en cada render. La pista Audio recibe WAV por separado y la exportación puede incluirlo, pero no se declara en este JSON. No añadas vídeo base, SFX, una playlist ni guardado de proyecto. Una plantilla/composición de subtítulos sigue siendo un documento independiente de MGT y de los overlays.
+
+REVISIÓN FINAL
+Comprueba que `kind`, `timing`, cues, words, tail y `ctx.subtitles.at` son coherentes, que una plantilla no contiene transcripción, que una composición sí la contiene cuando se solicita, y que el JSON conserva los tiempos sin redondearlos antes del muestreo a 60 FPS. Entrega al final esta solicitud:
+
+SOLICITUD DEL USUARIO
+[Indica si quieres plantilla o composición, texto y tiempos disponibles, estilo, fuente, colores, posición, número de líneas, entrada/salida, resaltado, duración, proporción y controles deseados.]

@@ -1,0 +1,482 @@
+{
+  "version": 4,
+  "name": "Escena 3D · cámara, caja y texto",
+  "seed": 1,
+  "parameters": [
+    {
+      "id": "cameraX",
+      "label": "Cámara · posición X",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraY",
+      "label": "Cámara · posición Y",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraDistance",
+      "label": "Cámara · distancia",
+      "type": "number",
+      "default": 1600,
+      "min": 500,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraYaw",
+      "label": "Cámara · giro horizontal (°)",
+      "type": "number",
+      "default": 0,
+      "min": -90,
+      "max": 90,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraPitch",
+      "label": "Cámara · inclinación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -60,
+      "max": 60,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraRoll",
+      "label": "Cámara · rotación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraFov",
+      "label": "Cámara · campo de visión (°)",
+      "type": "number",
+      "default": 45,
+      "min": 15,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxPosX",
+      "label": "Caja · posición X",
+      "type": "number",
+      "default": -250,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxPosY",
+      "label": "Caja · posición Y",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxPosZ",
+      "label": "Caja · posición Z",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxRotX",
+      "label": "Caja · rotación (°) X",
+      "type": "number",
+      "default": -20,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxRotY",
+      "label": "Caja · rotación (°) Y",
+      "type": "number",
+      "default": 30,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxRotZ",
+      "label": "Caja · rotación (°) Z",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxScaleX",
+      "label": "Caja · escala X",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "boxScaleY",
+      "label": "Caja · escala Y",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "boxScaleZ",
+      "label": "Caja · escala Z",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "boxWidth",
+      "label": "Caja · anchura",
+      "type": "number",
+      "default": 350,
+      "min": 50,
+      "max": 1000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxHeight",
+      "label": "Caja · altura",
+      "type": "number",
+      "default": 350,
+      "min": 50,
+      "max": 1000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxDepth",
+      "label": "Caja · profundidad",
+      "type": "number",
+      "default": 350,
+      "min": 50,
+      "max": 1000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "boxColor",
+      "label": "Caja · color",
+      "type": "color",
+      "default": "#e0a65c"
+    },
+    {
+      "id": "title",
+      "label": "Texto · contenido",
+      "type": "text",
+      "default": "Tu idea\nen 3D"
+    },
+    {
+      "id": "titleFont",
+      "label": "Texto · fuente instalada",
+      "type": "font",
+      "default": "Arial"
+    },
+    {
+      "id": "titleSize",
+      "label": "Texto · tamaño",
+      "type": "number",
+      "default": 100,
+      "min": 12,
+      "max": 400,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titlePosX",
+      "label": "Texto · posición X",
+      "type": "number",
+      "default": 300,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titlePosY",
+      "label": "Texto · posición Y",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titlePosZ",
+      "label": "Texto · posición Z",
+      "type": "number",
+      "default": 150,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titleRotX",
+      "label": "Texto · rotación (°) X",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titleRotY",
+      "label": "Texto · rotación (°) Y",
+      "type": "number",
+      "default": -15,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titleRotZ",
+      "label": "Texto · rotación (°) Z",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "titleScaleX",
+      "label": "Texto · escala X",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "titleScaleY",
+      "label": "Texto · escala Y",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "titleScaleZ",
+      "label": "Texto · escala Z",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "titleColor",
+      "label": "Texto · color",
+      "type": "color",
+      "default": "#f4f4f5"
+    }
+  ],
+  "resources": {},
+  "stops": [],
+  "scene3d": {
+    "version": 1,
+    "camera": {
+      "x": {
+        "param": "cameraX"
+      },
+      "y": {
+        "param": "cameraY"
+      },
+      "distance": {
+        "param": "cameraDistance"
+      },
+      "yaw": {
+        "param": "cameraYaw"
+      },
+      "pitch": {
+        "param": "cameraPitch"
+      },
+      "roll": {
+        "param": "cameraRoll"
+      },
+      "fov": {
+        "param": "cameraFov"
+      }
+    },
+    "objects": [
+      {
+        "id": "floor",
+        "type": "plane",
+        "position": {
+          "x": 0,
+          "y": 280,
+          "z": 0
+        },
+        "rotation": {
+          "x": 90,
+          "y": 0,
+          "z": 0
+        },
+        "width": 1400,
+        "height": 1000,
+        "color": "#24383c"
+      },
+      {
+        "id": "box",
+        "type": "box",
+        "position": {
+          "x": {
+            "param": "boxPosX"
+          },
+          "y": {
+            "param": "boxPosY"
+          },
+          "z": {
+            "param": "boxPosZ"
+          }
+        },
+        "rotation": {
+          "x": {
+            "param": "boxRotX"
+          },
+          "y": {
+            "param": "boxRotY"
+          },
+          "z": {
+            "param": "boxRotZ"
+          }
+        },
+        "scale": {
+          "x": {
+            "param": "boxScaleX"
+          },
+          "y": {
+            "param": "boxScaleY"
+          },
+          "z": {
+            "param": "boxScaleZ"
+          }
+        },
+        "width": {
+          "param": "boxWidth"
+        },
+        "height": {
+          "param": "boxHeight"
+        },
+        "depth": {
+          "param": "boxDepth"
+        },
+        "color": {
+          "param": "boxColor"
+        }
+      },
+      {
+        "id": "title",
+        "type": "text",
+        "text": {
+          "param": "title"
+        },
+        "font": {
+          "param": "titleFont"
+        },
+        "fontSize": {
+          "param": "titleSize"
+        },
+        "position": {
+          "x": {
+            "param": "titlePosX"
+          },
+          "y": {
+            "param": "titlePosY"
+          },
+          "z": {
+            "param": "titlePosZ"
+          }
+        },
+        "rotation": {
+          "x": {
+            "param": "titleRotX"
+          },
+          "y": {
+            "param": "titleRotY"
+          },
+          "z": {
+            "param": "titleRotZ"
+          }
+        },
+        "scale": {
+          "x": {
+            "param": "titleScaleX"
+          },
+          "y": {
+            "param": "titleScaleY"
+          },
+          "z": {
+            "param": "titleScaleZ"
+          }
+        },
+        "width": 650,
+        "height": 450,
+        "color": {
+          "param": "titleColor"
+        }
+      }
+    ]
+  },
+  "html": "",
+  "css": "",
+  "render": "",
+  "metadata": {
+    "description": "Controles 3D declarados en parameters. Texto plano situado en 3D; caja sólida y plano. Sin modelos ni animación de cámara."
+  },
+  "recommended": {
+    "duration": 5,
+    "aspect": "horizontal",
+    "resolution": 720
+  },
+  "editorSettings": {
+    "background": "#172326"
+  }
+}

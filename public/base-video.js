@@ -1,0 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+(function(root){'use strict';const Tracks=typeof module!=='undefined'&&module.exports?require('./tracks.js'):root.MGTTracks;
+function validate(input=[]){if(!Array.isArray(input)||input.length>16)throw Error('Hasta 16 clips de vídeo o imagen base.');const m=Tracks.create();m.restore(input);const clips=m.snapshot();for(const c of clips){const video=c.document.parameters.filter(p=>p.type==='video'),image=c.document.parameters.filter(p=>p.type==='image');if(video.length===1&&image.length===0&&Object.keys(c.document.videos??{}).length===1){if(!c.params[video[0].id]||!c.document.videos[c.params[video[0].id]])throw Error('Falta el recurso MP4 del clip base.');}else if(image.length===1&&video.length===0&&Object.keys(c.document.resources??{}).length===1){if(!c.params[image[0].id]||!c.document.resources[c.params[image[0].id]])throw Error('Falta el recurso de imagen base.');}else throw Error('La pista base requiere un MP4 o una imagen fija.');}return clips;}
+const api={validate};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MGTBaseVideo=api;
+})(typeof window!=='undefined'?window:globalThis);

@@ -1,0 +1,261 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schema_version",
+    "analysis_mode",
+    "id",
+    "producer",
+    "time_unit",
+    "time_origin",
+    "source",
+    "derivation",
+    "time_map",
+    "joins",
+    "transcript",
+    "events",
+    "annotations",
+    "limitations"
+  ],
+  "properties": {
+    "format": {
+      "const": "wordline-analysis-fast"
+    },
+    "schema_version": {
+      "const": "0.1"
+    },
+    "analysis_mode": {
+      "const": "fast"
+    },
+    "id": {
+      "type": "string"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "time_unit": {
+      "const": "seconds"
+    },
+    "time_origin": {
+      "const": "first_decoded_audio_sample"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "sha256",
+        "sample_rate",
+        "channels",
+        "frame_count",
+        "duration_seconds"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sample_rate": {
+          "const": 48000
+        },
+        "channels": {
+          "const": 2
+        },
+        "frame_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_sha256",
+        "edit_id",
+        "edit_revision",
+        "analysis_id",
+        "transcript_id",
+        "acoustically_revalidated"
+      ],
+      "properties": {
+        "original_sha256": {
+          "type": "string"
+        },
+        "edit_id": {
+          "type": "string"
+        },
+        "edit_revision": {
+          "type": "string"
+        },
+        "analysis_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transcript_id": {
+          "type": "string"
+        },
+        "acoustically_revalidated": {
+          "const": false
+        }
+      }
+    },
+    "time_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "original_start_sample",
+          "original_end_sample",
+          "edited_start_sample",
+          "edited_end_sample"
+        ],
+        "properties": {
+          "original_start_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "original_end_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "edited_start_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "edited_end_sample": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "joins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "at_sample",
+          "original_left_sample",
+          "original_right_sample",
+          "interpretation"
+        ],
+        "properties": {
+          "at_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "original_left_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "original_right_sample": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "interpretation": {
+            "const": "continuity_not_silence"
+          }
+        }
+      }
+    },
+    "transcript": {
+      "type": "object"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "original_id",
+          "type",
+          "start",
+          "end",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "original_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end": {
+            "type": "number",
+            "minimum": 0
+          },
+          "status": {
+            "const": "inherited_not_reanalyzed"
+          }
+        }
+      }
+    },
+    "annotations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_id",
+          "type",
+          "original_id"
+        ],
+        "properties": {
+          "target_id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "partial_word_unverified",
+              "unaligned_text_unverified"
+            ]
+          },
+          "original_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
