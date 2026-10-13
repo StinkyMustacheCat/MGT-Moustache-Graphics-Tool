@@ -5,8 +5,9 @@ const crypto=require('node:crypto');
 const assert=require('node:assert/strict');
 const {spawn}=require('node:child_process');
 const config=JSON.parse(fs.readFileSync(path.join(__dirname,'..','config.json'),'utf8'));
-const runtime=path.dirname(config.playwright);
-const {chromium}=require(runtime+'/playwright-core');
+const playwright=path.resolve(path.join(__dirname,'..'),config.playwright);
+const runtime=path.dirname(playwright);
+const {chromium}=require(playwright);
 
 const root=path.resolve(__dirname,'..');
 const temp=path.join(root,'test-results','prompts-'+crypto.randomUUID());
@@ -27,7 +28,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       await delay(100);
     }
     assert.ok(info?.url,'El servidor local no inició.');
-    browser=await chromium.launch({executablePath:config.chromium,headless:true});
+    browser=await chromium.launch({executablePath:path.resolve(path.join(__dirname,'..'),config.chromium),headless:true});
     context=await browser.newContext({permissions:['clipboard-read','clipboard-write']});
     const page=await context.newPage();
     await page.goto(info.url);

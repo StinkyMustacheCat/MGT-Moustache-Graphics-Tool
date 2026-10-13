@@ -8,7 +8,7 @@ const {spawn,execFileSync}=require('node:child_process');
 
 const root=path.resolve(__dirname,'..');
 const config=require(path.join(root,'config.json'));
-const {chromium}=require(config.playwright);
+const {chromium}=require(path.resolve(root,config.playwright));
 const temp=path.join(root,'test-results','stability-0985-'+crypto.randomUUID());
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 fs.mkdirSync(path.join(temp,'data'),{recursive:true});
@@ -30,7 +30,7 @@ let child,browser,url,info;
     assert.equal(info?.version,require(path.join(root,'package.json')).version);
     console.log('API informa '+info.version);
 
-    browser=await chromium.launch({executablePath:config.chromium,headless:true});
+    browser=await chromium.launch({executablePath:path.resolve(root,config.chromium),headless:true});
     const page=await browser.newPage({viewport:{width:1440,height:1000}});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto(url);await page.waitForFunction(()=>initialized&&ready);
@@ -66,7 +66,7 @@ let child,browser,url,info;
     const href=await page.locator('#download').getAttribute('href');
     const response=await fetch(url+href);assert(response.ok);
     const video=path.join(temp,'estabilidad.mp4');fs.writeFileSync(video,Buffer.from(await response.arrayBuffer()));
-    const probe=JSON.parse(execFileSync(path.join(path.dirname(config.ffmpeg),'ffprobe.exe'),['-v','error','-show_streams','-of','json',video],{encoding:'utf8',windowsHide:true}));
+    const probe=JSON.parse(execFileSync(path.join(path.dirname(path.resolve(root,config.ffmpeg)),'ffprobe.exe'),['-v','error','-show_streams','-of','json',video],{encoding:'utf8',windowsHide:true}));
     assert.equal(probe.streams.find(stream=>stream.codec_type==='video').nb_frames,'30');
     console.log('Exportación real: MP4 de 30 fotogramas');
 

@@ -6,6 +6,7 @@ function stage(destination,runtimeSource){
  if(!destination||!runtimeSource)throw Error('Indica carpeta de salida nueva y carpeta runtime existente.');
  const output=path.resolve(destination),runtime=path.resolve(runtimeSource);
  if(fs.existsSync(output))throw Error('La carpeta de salida ya existe.');
+ for(const name of ['MGT.exe','Iniciar MGT.cmd','Detener MGT.cmd','LEEME.md'])if(!fs.existsSync(path.join(source,name)))throw Error('Falta preparar antes de empaquetar: '+name);
  for(const name of ['node/node.exe','chromium/chrome.exe','ffmpeg/ffmpeg.exe','ffmpeg/ffprobe.exe','playwright-core/package.json'])if(!fs.existsSync(path.join(runtime,name)))throw Error('Falta en runtime: '+name);
  const copy=(from,to)=>{fs.mkdirSync(path.dirname(to),{recursive:true});fs.cpSync(from,to,{recursive:true,errorOnExist:true,force:false});};
  fs.mkdirSync(output,{recursive:true});
@@ -19,9 +20,11 @@ function stage(destination,runtimeSource){
  for(const name of ['public','examples','schemas','scripts','tests','package.json'])copy(path.join(source,name),path.join(app,name));
  fs.writeFileSync(path.join(app,'config.json'),JSON.stringify({chromium:'../runtime/chromium/chrome.exe',dataMode:'local',port:43871,playwright:'../runtime/playwright-core',ffmpeg:'../runtime/ffmpeg/ffmpeg.exe'},null,2)+'\n');
  const docs=path.join(output,'documentacion');fs.mkdirSync(docs);
- for(const entry of fs.readdirSync(source,{withFileTypes:true}))if(entry.isFile()&&(/\.md$/i.test(entry.name)||['LICENSE','LICENSING.md'].includes(entry.name)))copy(path.join(source,entry.name),path.join(docs,entry.name));
+ for(const entry of fs.readdirSync(source,{withFileTypes:true}))if(entry.isFile()&&(/\.md$/i.test(entry.name)||['LICENSE','LICENSING.md','COMPONENTES.json'].includes(entry.name)))copy(path.join(source,entry.name),path.join(docs,entry.name));
+ for(const entry of fs.readdirSync(path.join(source,'docs'),{withFileTypes:true}))if(entry.isFile()&&/\.md$/i.test(entry.name)&&!['README.md','LEEME.md','LICENSING.md'].includes(entry.name))copy(path.join(source,'docs',entry.name),path.join(docs,entry.name));
  copy(path.join(source,'LEEME.md'),path.join(output,'LEEME.txt'));
  copy(path.join(source,'licenses'),path.join(docs,'licenses'));
+ copy(path.join(source,'third-party','ffmpeg'),path.join(docs,'third-party','ffmpeg'));
  fs.mkdirSync(path.join(output,'galeria'));fs.mkdirSync(path.join(output,'subtitulos'));
  for(const name of ['01-fondo.mgt.json','02-corazon.mgt.json','03-perspectiva.mgt.json'])copy(path.join(source,'examples',name),path.join(output,'galeria',name));
  const hashes={};function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())walk(full);else if(entry.isFile()){const relative=path.relative(output,full).split(path.sep).join('/');if(relative!=='SHA256-MANIFEST.json')hashes[relative]=crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');}else throw Error('Enlace no admitido: '+full);}}walk(output);

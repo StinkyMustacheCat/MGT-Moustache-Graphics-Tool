@@ -7,20 +7,44 @@
     "archiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541"
   },
   "chromium": {
-    "distribution": "Chrome for Testing",
-    "version": "151.0.7922.34",
-    "playwrightRevision": "1234",
-    "source": "https://cdn.playwright.dev/builds/cft/151.0.7922.34/win64/chrome-win64.zip",
-    "notices": "licenses/Chromium-Credits.html"
+    "distribution": "ungoogled-chromium Windows x64 community build",
+    "version": "151.0.7922.173",
+    "playwrightCore": "1.62.1",
+    "source": "https://github.com/ungoogled-software/ungoogled-chromium-windows/tree/151.0.7922.173-1.1",
+    "binaryArchive": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/151.0.7922.173-1.1/ungoogled-chromium_151.0.7922.173-1.1_windows_x64.zip",
+    "binaryArchiveSha256": "c0f42831708a9a2ea9221df1d07715f57e2365836054cb68cbe6b6191da626e2",
+    "notices": [
+      "licenses/Chromium-LICENSE.txt",
+      "licenses/Ungoogled-Chromium-LICENSE.txt",
+      "licenses/Chromium-Credits.html"
+    ]
   },
   "playwright": {
     "version": "1.62.1",
     "source": "https://github.com/microsoft/playwright"
   },
   "ffmpeg": {
-    "version": "9.0.1-essentials_build",
-    "build": "https://www.gyan.dev/ffmpeg/builds/",
-    "source": "https://github.com/FFmpeg/FFmpeg/commit/bf1b838f2a",
+    "version": "9.0.1",
+    "build": "Project-specific static Windows x64 build; GPL-3.0-or-later; external libraries: libx264, dav1d and zlib",
+    "binarySha256": "5ba741fda5de0f5e882eb16218f883821b14cc4bf05ad053642d83a6d22e39c3",
+    "ffprobeBinarySha256": "2a9346fd93e4a9765f0db3ce5a39592e0993bdf7dfd9052a5b42c79c26ca2139",
+    "source": "https://github.com/FFmpeg/FFmpeg/commit/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa",
+    "sourceArchive": "third-party/ffmpeg/sources/ffmpeg-9.0.1-bf1b838f2a.tar.xz",
+    "sourceArchiveSha256": "deeef2b2b4cbb99a46950af2e476e3f0d6475edb60c176c6650de34771672404",
+    "x264Version": "0.165.3223",
+    "x264Source": "https://code.videolan.org/videolan/x264/-/commit/0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee",
+    "x264SourceArchive": "third-party/ffmpeg/sources/x264-0.165.3223-0480cb0.tar.xz",
+    "x264SourceArchiveSha256": "34f49a427fef0218efff80b79e787b92f8599700c3c689528cc64b1c232dd3ee",
+    "zlibVersion": "1.3.2",
+    "zlibSource": "https://github.com/madler/zlib/commit/da607da739fa6047df13e66a2af6b8bec7c2a498",
+    "zlibSourceArchive": "third-party/ffmpeg/sources/zlib-1.3.2-da607da739.tar.gz",
+    "zlibSourceArchiveSha256": "c8513234d5275a5dee5c96abfffb54a5e08ad01a10cc6ffe2f5f1f81c31e3e91",
+    "dav1dVersion": "1.5.4",
+    "dav1dSource": "https://github.com/videolan/dav1d/commit/54706fc6bc0cdecab7e9593974a4039cc038fca7",
+    "dav1dSourceArchive": "third-party/ffmpeg/sources/dav1d-1.5.4.tar.gz",
+    "dav1dSourceArchiveSha256": "a1d5b63d2d38ec9bd03acf643caa51fa22edd1e89c5a109c4807717216bbec07",
+    "buildScript": "third-party/ffmpeg/build.sh",
+    "buildToolchainTested": "MSYS2 UCRT64; MinGW-w64 GCC 16.2.0 Rev5; GNU Make 4.4.1; NASM 3.02",
     "details": "licenses/FFmpeg-README.txt"
   },
   "windowsLauncher": {

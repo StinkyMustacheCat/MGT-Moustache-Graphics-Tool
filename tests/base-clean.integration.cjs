@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),config=JSON.parse(fs.readFileSync(path.join(root,'config.json'))),runtime=path.dirname(config.playwright),{chromium}=require(config.playwright);
+const root=path.resolve(__dirname,'..'),config=JSON.parse(fs.readFileSync(path.join(root,'config.json'))),playwright=path.resolve(root,config.playwright),runtime=path.dirname(playwright),{chromium}=require(playwright);
 const temp=path.join(root,'test-results','base-clean-'+crypto.randomUUID()),delay=ms=>new Promise(r=>setTimeout(r,ms));
 fs.mkdirSync(temp,{recursive:true});let server,browser;
 (async()=>{try{
  const fd=fs.openSync(path.join(temp,'server.log'),'a');server=spawn(process.execPath,[path.join(root,'server.cjs')],{cwd:root,env:{...process.env,MGT_DATA_ROOT:path.join(temp,'data')},windowsHide:true,stdio:['ignore',fd,fd]});fs.closeSync(fd);
  const instance=crypto.createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);let url;
  for(let i=0;i<200;i++){try{const data=JSON.parse(fs.readFileSync(path.join(temp,'data',instance,'running.json')));if(data.pid===server.pid){url=data.url;break;}}catch{}await delay(100);}assert(url,'Servidor no disponible');
- browser=await chromium.launch({executablePath:process.env.MGT_TEST_BROWSER||config.chromium,headless:true,env:{...process.env,TEMP:temp,TMP:temp}});
+ browser=await chromium.launch({executablePath:path.resolve(root,process.env.MGT_TEST_BROWSER||config.chromium),headless:true,env:{...process.env,TEMP:temp,TMP:temp}});
  const page=await browser.newPage();page.on('dialog',d=>d.accept('1'));await page.goto(url);await page.waitForFunction(()=>initialized&&ready);if(await page.locator('#welcomeDialog').isVisible())await page.click('#startWelcome');
  assert.deepEqual(await page.evaluate(()=>({mainPresent,custom,clips:MGTMGTModel.snapshot().length,general:!$('generalInspector').hidden,legacy:$('mainInspector').hidden})),{mainPresent:false,custom:null,clips:0,general:true,legacy:true});
  const doc={version:3,name:'Prueba MGT',parameters:[],html:'<div id="mark">MGT</div>',css:'#mark{color:white;font-size:120px}',render:'',recommended:{duration:1}};

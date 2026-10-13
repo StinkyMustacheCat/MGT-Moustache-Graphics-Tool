@@ -1,12 +1,12 @@
 # MGT 1.0.0 · pruebas de la primera versión estable
 
-Las 114 pruebas unitarias y las 15 integraciones de navegador están en el alcance de esta versión. Las nueve integraciones históricas se adaptaron a clips MGT independientes, duración general y pistas compactas. La regresión de edición comprueba que Ctrl+V pega subtítulos tras cortar esa pista aunque antes se haya copiado un MGT. Las pruebas verifican el funcionamiento por sesión; no implican guardado y restauración de proyectos completos ni sustituyen una prueba en otro equipo.
+Las 114 pruebas unitarias y las 15 integraciones de navegador están en el alcance de esta versión. Las nueve integraciones históricas se adaptaron a clips MGT independientes, duración general y pistas compactas; también resuelven las rutas del runtime desde la configuración de la aplicación, no desde el directorio actual de la terminal. La prueba de medios usa fixtures sintéticos incluidos en `tests/fixtures/media-input/`, por lo que no necesita codificadores opcionales en el FFmpeg del producto. La regresión de edición comprueba que Ctrl+V pega subtítulos tras cortar esa pista aunque antes se haya copiado un MGT. Las pruebas verifican el funcionamiento por sesión; no implican guardado y restauración de proyectos completos ni sustituyen una prueba en otro equipo.
 
 ## Historial de 0.9.8.5
 
 Ejecutar `node --test tests/*.test.cjs` para los contratos y validaciones internas. Las integraciones actuales verificadas individualmente son `base-clean.integration.cjs`, `prompts.integration.cjs`, `stability-0985.integration.cjs`, `media-input.integration.cjs`, `overlay-window.integration.cjs` y `export-tracks.integration.cjs`. Las pruebas de navegador usan `process.execPath` para iniciar el servidor local y requieren permiso de conexión a 127.0.0.1.
 
-Las integraciones restantes eran históricas en 0.9.8.5 y no formaban parte de su criterio de aprobación. La prueba `stability-0985.integration.cjs` cubría el recorrido de código a clip, duración y exportación, y el servidor rechazaba una pista principal que excedía el proyecto.
+En 1.0.0, las 15 integraciones —incluidas las que eran históricas en 0.9.8.5— se ejecutan contra el runtime empacado. `stability-0985.integration.cjs` cubre el recorrido de código a clip, duración y exportación, y que el servidor rechace una pista principal que excede el proyecto. `media-input.integration.cjs` verifica importación de MP3, FLAC, AAC/M4A, Vorbis, Opus, H.264, HEVC, ProRes, VP8, VP9 y AV1, además de límites, rechazos y exportación combinada.
 
 # MGT 0.9.4
 
