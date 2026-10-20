@@ -1,5 +1,5 @@
 {
-  "mgt": "1.0.0",
+  "mgt": "1.5.2",
   "platform": "Windows x64",
   "node": {
     "version": "v24.21.0",

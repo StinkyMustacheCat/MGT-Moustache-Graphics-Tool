@@ -1,4 +1,4 @@
-# Inicio y cierre · MGT 1.0.0
+# Inicio y cierre · MGT 1.5.2
 
 Abre **MGT.exe** o **Iniciar MGT.cmd**. No se abre una consola ni una ventana de lanzamiento adicional. El programa inicia su servidor, comprueba la conexión y verifica que la vista real termine de prepararse. El aviso de inicio y Reintentar siguen disponibles dentro de la interfaz.
 

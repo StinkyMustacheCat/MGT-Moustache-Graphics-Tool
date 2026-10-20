@@ -1,4 +1,4 @@
-MGT FFmpeg build — MGT 1.0.0
+MGT FFmpeg build — MGT 1.5.2
 ===========================
 
 The Windows x64 portable package uses a project-specific static FFmpeg build,

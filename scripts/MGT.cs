@@ -10,8 +10,8 @@ using System.Reflection;
 using System.Text;
 [assembly: AssemblyTitle("Moustache Graphics Tool")]
 [assembly: AssemblyProduct("Moustache Graphics Tool")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.4.0.0")]
+[assembly: AssemblyFileVersion("1.4.0.0")]
 
 class MGT {
   delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);

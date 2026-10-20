@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Regresión histórica de pista Overlay única; reemplazada por overlay-lanes.integration.cjs.
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawn,execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),config=JSON.parse(fs.readFileSync(path.join(root,'config.json'))),playwright=path.resolve(root,config.playwright),runtime=path.dirname(playwright),{chromium}=require(playwright);
+const temp=path.join(root,'test-results','overlay-window-'+crypto.randomUUID()),delay=ms=>new Promise(r=>setTimeout(r,ms));
+fs.mkdirSync(temp,{recursive:true});let server,browser;
+(async()=>{try{
+ const fd=fs.openSync(path.join(temp,'server.log'),'a');server=spawn(process.execPath,[path.join(root,'server.cjs')],{cwd:root,env:{...process.env,MGT_DATA_ROOT:path.join(temp,'data')},windowsHide:true,stdio:['ignore',fd,fd]});fs.closeSync(fd);
+ const instance=crypto.createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);let url;
+ for(let i=0;i<200;i++){try{const data=JSON.parse(fs.readFileSync(path.join(temp,'data',instance,'running.json')));if(data.pid===server.pid){url=data.url;break;}}catch{}await delay(100);}assert(url,'Servidor no disponible');
+ browser=await chromium.launch({executablePath:path.resolve(root,process.env.MGT_TEST_BROWSER||config.chromium),headless:true,env:{...process.env,TEMP:temp,TMP:temp}});const page=await browser.newPage();page.on('dialog',d=>d.accept('1'));await page.goto(url);await page.waitForFunction(()=>initialized&&ready);if(await page.locator('#welcomeDialog').isVisible())await page.click('#startWelcome');
+ const doc={version:3,name:'Overlay ventana',parameters:[],html:'<div id="mark">OVERLAY TEST</div>',css:'#mark{color:red;font-size:120px}',render:'',recommended:{duration:1}};
+ await page.evaluate(async d=>{state=Scene.normalize({...state,duration:5});mgDuration=5;rebuild();await MGTTrackUIAddCode(d,1,0);},doc);
+ await page.waitForFunction(()=>MGTTrackUI.snapshot().length===1&&!MGTTrackUI.preparing());
+ const result=await page.evaluate(()=>{const clip=MGTTrackUI.snapshot()[0];const result=[];for(const f of [0,59,60,120,179,180]){showFrame(f);result.push({frame:f,visible:!document.querySelector('.overlay-view:not(.base-video-view)').hidden});}return {result,clip};});
+ assert.deepEqual(result.result.map(x=>x.visible),[true,true,false,false,false,false]);
+ await page.evaluate(()=>{const c=MGTTrackUI.snapshot()[0];MGTTrackUI.select(c.id);document.querySelector('#overlayStart').value='2';document.querySelector('#overlayStart').dispatchEvent(new Event('change'));});
+ const moved=await page.evaluate(()=>{const result=[];for(const f of [0,119,120,179,180]){showFrame(f);result.push(!document.querySelector('.overlay-view:not(.base-video-view)').hidden);}return {result,clip:MGTTrackUI.snapshot()[0]};});
+ assert.equal(moved.clip.start,120);assert.deepEqual(moved.result,[false,false,true,true,false]);
+ const layers=require('../layer-render-097.cjs').normalize(await page.evaluate(()=>({...MGTTrackUI.capture(),mainDuration:mgDuration,mainStart:mgStart,flags:MGTTrackState.capture()})),await page.evaluate(()=>structuredClone(state)));
+ assert.equal(layers.overlays.length,1);assert.equal(layers.overlays[0].start,120);
+ console.log('Overlay visible solo en su tramo antes y después de moverlo.');
+ await page.evaluate(()=>$('useText').click());assert.equal(await page.evaluate(()=>mainPresent),false);assert.equal(await page.locator('#scene').isHidden(),true);
+ const emptyLayers=require('../layer-render-097.cjs').normalize(await page.evaluate(()=>({...MGTTrackUI.capture(),mainDuration:mgDuration,mainStart:mgStart,mainPresent,flags:MGTTrackState.capture()})),await page.evaluate(()=>structuredClone(state)));
+ assert.equal(emptyLayers.mainPresent,false);const renderPage=await browser.newPage({viewport:{width:960,height:540}});const draw=await require('../layer-render-097.cjs').open(renderPage,await page.evaluate(()=>structuredClone(state)),await page.evaluate(()=>structuredClone(custom)),await page.evaluate(()=>structuredClone(params)),1,emptyLayers,960,540,p=>p);
+ for(const [frame,shown] of [[0,false],[119,false],[120,true],[179,true],[180,false]]){await draw(frame);assert.equal(await renderPage.locator('iframe:not([hidden])').count(),shown?1:0);}await renderPage.close();
+ console.log('Exportador respeta el mismo tramo y el MGT eliminado no reaparece.');
+ await page.evaluate(()=>showFrame(0));
+ const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="#00ff00"/></svg>');
+ async function image(target){await page.click('button:has-text("+ Imagen")');await page.locator('.track-picker:not([hidden]) button').filter({hasText:target}).last().click();await page.locator('input[accept=".png,.jpg,.jpeg,.webp,.svg"]').last().setInputFiles({name:'verde.svg',mimeType:'image/svg+xml',buffer:svg});await page.waitForTimeout(500);}
+ await image('Overlay');await page.waitForFunction(()=>MGTTrackUI.snapshot().length===2);assert.equal(await page.evaluate(()=>MGTTrackUI.snapshot()[1].document.parameters[0].type),'image');
+ await image('Vídeo/imagen base');await page.waitForFunction(()=>MGTTrackUI.hasVideo());assert.equal(await page.evaluate(()=>MGTTrackUI.video().document.parameters[0].type),'image');
+ await image('Vídeo/imagen base');await page.waitForFunction(()=>MGTTrackUI.capture().video.length===2);let bases=await page.evaluate(()=>MGTTrackUI.capture().video);assert.deepEqual(bases.map(c=>c.start),[0,60]);assert.equal(await page.locator('.video-timeline-clip').count(),2);
+ await page.evaluate(()=>{const c=MGTTrackUI.capture().video[1];MGTTrackUI.select(c.id);$('overlayStart').value='3';$('overlayStart').dispatchEvent(new Event('change'));});bases=await page.evaluate(()=>MGTTrackUI.capture().video);assert.equal(bases[1].start,180);
+ const baseVisibility=await page.evaluate(()=>{const id=MGTTrackUI.capture().video[1].id,out=[];for(const f of [0,179,180,239,240]){showFrame(f);out.push(![...document.querySelectorAll('.base-video-view')].find(v=>v.title.includes('verde.svg')&&v===document.querySelectorAll('.base-video-view')[1]).hidden);}return out;});assert.deepEqual(baseVisibility,[false,false,true,true,false]);
+ await image('MGT');await page.waitForFunction(()=>MGTMGTModel.snapshot().length===1);assert.equal(await page.evaluate(()=>MGTMGTModel.snapshot()[0].document.parameters[0].type),'image');assert.equal(await page.evaluate(()=>mainPresent),false);
+ const mp4=path.join(temp,'verde.mp4');execFileSync(path.join(runtime,'ffmpeg','ffmpeg.exe'),['-v','error','-f','lavfi','-i','color=c=green:s=32x32:r=60:d=1','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',mp4],{windowsHide:true});await page.evaluate(()=>showFrame(0));
+ await page.setInputFiles('#baseVideoFile',mp4);await page.waitForFunction(()=>MGTTrackUI.capture().video.length===3&&!MGTTrackUI.preparing(),{},{timeout:45000});await page.setInputFiles('#baseVideoFile',mp4);try{await page.waitForFunction(()=>MGTTrackUI.capture().video.length===4&&!MGTTrackUI.preparing(),{},{timeout:45000});}catch(error){console.error('MP4 repetido:',await page.evaluate(()=>({clips:MGTTrackUI.capture().video.map(c=>({name:c.document.name,start:c.start,frames:c.frames})),status:$('tracksStatus').textContent,message:$('message').textContent,preparing:MGTTrackUI.preparing(),frame:currentFrame})));throw error;}
+ bases=await page.evaluate(()=>MGTTrackUI.capture().video);assert.deepEqual(bases.map(c=>c.start),[0,180,60,120]);assert.equal(await page.locator('.video-timeline-clip').count(),4);
+ const moving=page.locator('.video-timeline-clip').nth(1),bounds=await moving.boundingBox(),laneBounds=await page.locator('#baseVideoLane').boundingBox();assert(bounds&&laneBounds);await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2+laneBounds.width/5,bounds.y+bounds.height/2,{steps:8});await page.mouse.up();await page.waitForFunction(()=>MGTTrackUI.capture().video[1].start===240);
+ const allLayers=require('../layer-render-097.cjs').normalize(await page.evaluate(()=>({...MGTTrackUI.capture(),mainDuration:mgDuration,mainStart:mgStart,mainPresent,flags:MGTTrackState.capture()})),await page.evaluate(()=>structuredClone(state)));
+ assert.equal(allLayers.video.length,4);assert.equal(allLayers.mgt.length,1);assert.equal(allLayers.overlays.length,2);
+ const exportPage=await browser.newPage({viewport:{width:960,height:540}}),drawAll=await require('../layer-render-097.cjs').open(exportPage,await page.evaluate(()=>structuredClone(state)),null,{},1,allLayers,960,540,p=>p);
+ const expectedEntries=[...allLayers.video,...allLayers.mgt,...allLayers.overlays];for(const frame of [0,59,60,119,120,179,180,239,240,299]){await drawAll(frame);assert.deepEqual(await exportPage.locator('iframe').evaluateAll(els=>els.map(el=>!el.hidden)),expectedEntries.map(c=>frame>=c.start&&frame<c.start+c.frames),'Capas exportadas en fotograma '+frame);}await exportPage.close();
+ await page.evaluate(()=>showFrame(240));await page.setInputFiles('#baseVideoFile',mp4);await page.waitForFunction(()=>MGTTrackUI.capture().video.length===5&&!MGTTrackUI.preparing(),{},{timeout:45000});assert.equal(await page.evaluate(()=>MGTTrackUI.capture().video.at(-1).start),180);assert.match(await page.locator('#tracksStatus').textContent(),/hueco anterior/);
+ console.log('Imagen en Overlay/MGT y cuatro clips base independientes, incluidos dos MP4.');
+ }finally{await browser?.close();server?.kill();}})().catch(e=>{console.error(e);process.exitCode=1;});

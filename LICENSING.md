@@ -1,6 +1,6 @@
 # Licencias de MGT
 
-Este documento delimita las licencias de MGT 1.0.0. No cambia licencias de terceros ni concede derechos que sus titulares no hayan otorgado.
+Este documento delimita las licencias de MGT 1.5.2. No cambia licencias de terceros ni concede derechos que sus titulares no hayan otorgado.
 
 ## Código propio: GPL-3.0-or-later
 El código propio de MGT (server.cjs, audio-store.cjs, moustache-media.cjs, wav-subtitles.cjs, storage.cjs, runtime.cjs, launcher.cjs, public/*.js, index.html, style.css, lanzadores, pruebas y scripts de empaquetado) se distribuye bajo GNU General Public License versión 3 o, a elección del destinatario, cualquier versión posterior. Texto íntegro en LICENSE.

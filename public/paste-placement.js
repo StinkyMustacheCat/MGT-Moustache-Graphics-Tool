@@ -8,5 +8,14 @@
   return {start,frames:Math.min(length,available),available,trim:length>available};
  }
  function planNext(clips,reader,length,end,wrap=false){let result=plan(clips,reader,length,end),wrapped=false;if(wrap&&!result.available&&reader>0){const earlier=plan(clips,0,length,end);if(earlier.available){result=earlier;wrapped=true;}}return {plan:result,wrapped};}
- const api={plan,planNext};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MGTPastePlacement=api;
+ function snapStart(clips,id,start,length,end,tolerance){
+  const others=clips.filter(c=>c.id!==id),fits=value=>value>=0&&value<end&&!others.some(c=>value<c.start+c.frames&&value+length>c.start);
+  let best=start,distance=tolerance+1;
+  for(const c of others)for(const edge of [c.start,c.start+c.frames])for(const candidate of [edge,edge-length]){
+   const delta=Math.abs(candidate-start);
+   if(delta<distance&&delta<=tolerance&&fits(candidate)){best=candidate;distance=delta;}
+  }
+  return best;
+ }
+ const api={plan,planNext,snapStart};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MGTPastePlacement=api;
 })(typeof window!=='undefined'?window:globalThis);

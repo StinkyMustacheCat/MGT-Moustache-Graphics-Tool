@@ -24,15 +24,16 @@
    let start=e.start;
    if(start===undefined){start=0;for(const c of [...next].sort((a,b)=>a.start-b.start)){if(start+length<=c.start)break;start=Math.max(start,c.start+c.frames);}}
    validPlacement(next,e.id,start,length,projectFrames);
-   next.push({id:e.id,document,params:Composition.values(document),seed:document.seed??1,start,frames:length,bytes,revision:0});
+   const recommended=document.recommended?.duration,autoDuration=typeof e.autoDuration==='boolean'?e.autoDuration:Number.isFinite(recommended)&&frames(recommended)===length;
+   next.push({id:e.id,document,params:Composition.values(document),seed:document.seed??1,start,frames:length,bytes,revision:0,autoDuration});
   }clips=next;return snapshot();}
   function get(id){const c=clips.find(c=>c.id===id);if(!c)throw Error('Overlay no encontrado.');return structuredClone(c);}
-  function move(id,start,length,projectFrames){const c=get(id);validPlacement(clips,id,start,length,projectFrames);clips=clips.map(c=>c.id===id?{...c,start,frames:length}:c);return get(id);}
+  function move(id,start,length,projectFrames,autoDuration){const c=get(id);validPlacement(clips,id,start,length,projectFrames);clips=clips.map(c=>c.id===id?{...c,start,frames:length,autoDuration:typeof autoDuration==='boolean'?autoDuration:length===c.frames&&c.autoDuration}:c);return get(id);}
   function parameters(id,input){const c=get(id),params=Composition.values(c.document,input);clips=clips.map(c=>c.id===id?{...c,params}:c);return get(id);}
   function replace(id,raw,input){get(id);const document=Composition.parse(raw);new Function('ctx',document.render);const params=Composition.values(document,input),bytes=new TextEncoder().encode(JSON.stringify(document)).length;if(clips.filter(c=>c.id!==id).reduce((n,c)=>n+c.bytes,0)+bytes>MAX_BYTES)throw Error('Los recursos superan 96 MiB de JSON.');clips=clips.map(c=>c.id===id?{...c,document,params,bytes,revision:(c.revision??0)+1}:c);return get(id);}
   function remove(id){get(id);clips=clips.filter(c=>c.id!==id);}
   function at(frame,projectFrames){if(!Number.isInteger(frame)||frame<0||frame>=projectFrames)return null;const c=clips.find(c=>frame>=c.start&&frame<c.start+c.frames);return c?{clip:structuredClone(c),localFrame:frame-c.start}:null;}
-  function restore(input){const next=create();next.addMany(input.map(c=>({id:c.id,document:c.document,start:c.start,duration:c.frames/60})),216000);const restored=next.snapshot().map(c=>{const raw=input.find(x=>x.id===c.id),seed=raw.seed??c.seed;if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw Error('Semilla de clip no válida.');return {...c,seed,params:Composition.values(c.document,raw.params)};});clips=restored;}
+  function restore(input){const next=create();next.addMany(input.map(c=>({id:c.id,document:c.document,start:c.start,duration:c.frames/60,autoDuration:c.autoDuration})),216000);const restored=next.snapshot().map(c=>{const raw=input.find(x=>x.id===c.id),seed=raw.seed??c.seed;if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw Error('Semilla de clip no válida.');return {...c,seed,params:Composition.values(c.document,raw.params)};});clips=restored;}
   return {restore,snapshot,get,addMany,move,parameters,replace,remove,at};
  }
  const api={FPS,MAX_CLIPS,MAX_BYTES,frames,interval,validPlacement,coordinateDuration,create};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MGTTracks=api;

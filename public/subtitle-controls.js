@@ -126,7 +126,7 @@
   if(pendingApply||imageImporting||!info)throw Error('Espera a que termine la operación actual.');const doc=compose();
 
   applying=true;syncState();pause();await MGTTrackUI.applySubtitles(doc);
-  content=structuredClone(doc.subtitles);dirty=false;unsaved=true;observed=MGTTrackUI.subtitle()?.document;useCurrent=true;importSettings=null;const track=$('subtitleClip')?.parentElement,label=track?.previousElementSibling;if(label&&track){label.style.display='flex';track.style.display='block';label.dataset.visible='true';}setTab(false);status('Subtítulos aplicados en su pista y visibles en el escenario.');
+  content=structuredClone(doc.subtitles);dirty=false;unsaved=true;observed=MGTTrackUI.subtitle()?.document;useCurrent=true;importSettings=null;setTab(false);status('Subtítulos aplicados como clip visual y visibles en el escenario.');
  });
  $('subDownload').onclick=attempt(()=>{const doc=compose();download(doc);unsaved=false;status('Composición WMGT descargada con plantilla, textos, tiempos y ajustes.');});
  $('subPrevious').onclick=attempt(()=>{ensureRows();page--;renderCues();});$('subNext').onclick=attempt(()=>{ensureRows();page++;renderCues();});$('subSearch').oninput=renderLibrary;$('subRefreshLibrary').onclick=attempt(loadLibrary);

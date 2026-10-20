@@ -34,22 +34,22 @@ let child,browser,url,info;
     const page=await browser.newPage({viewport:{width:1440,height:1000}});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto(url);await page.waitForFunction(()=>initialized&&ready);
-    assert.match(await page.locator('.brand small').textContent(),/1\.0\.0/);
-    assert.match(await page.locator('#settingsDialog section h3').last().textContent(),/1\.0\.0/);
-    assert.match(await page.locator('#welcomeDialog .dialog-intro').textContent(),/1\.0\.0/);
+    assert((await page.locator('.brand small').textContent()).includes(info.version));
+    assert((await page.locator('#settingsDialog section h3').last().textContent()).includes(info.version));
+    assert((await page.locator('#welcomeDialog .dialog-intro').textContent()).includes(info.version));
     if(await page.locator('#welcomeDialog').isVisible())await page.click('#startWelcome');
     console.log('Interfaz y API muestran la misma versión');
 
     const composition={version:3,name:'Estabilidad',parameters:[],html:'<div id="mark">OK</div>',css:'#mark{position:absolute;inset:20%;background:#cc2233;color:#fff;font:40px Arial}',render:'',recommended:{duration:.5}};
     await page.click('#codeTab');await page.locator('#code').fill(JSON.stringify(composition));await page.click('#applyCode');
-    await page.waitForFunction(()=>MGTMGTModel.snapshot().length===1&&!MGTTrackUI.preparing());
-    const clip=await page.evaluate(()=>({mainPresent,custom,clip:MGTMGTModel.snapshot()[0],inspector:!$('overlayInspector').hidden}));
+    await page.waitForFunction(()=>MGTTrackUI.snapshot().length===1&&!MGTTrackUI.preparing());
+    const clip=await page.evaluate(()=>({mainPresent,custom,clip:MGTTrackUI.snapshot()[0],inspector:!$('overlayInspector').hidden}));
     assert.equal(clip.mainPresent,false);assert.equal(clip.custom,null);
     assert.equal(clip.clip.document.name,'Estabilidad');assert.equal(clip.clip.frames,30);assert.equal(clip.inspector,true);
     await page.evaluate(()=>{showFrame(0);});
-    assert.equal(await page.locator('.mgt-clip-view:not([hidden])').count(),1);
+    assert.equal(await page.locator('.overlay-view:not([hidden])').count(),1);
     await page.evaluate(()=>{showFrame(30);});
-    assert.equal(await page.locator('.mgt-clip-view:not([hidden])').count(),0);
+    assert.equal(await page.locator('.overlay-view:not([hidden])').count(),0);
     console.log('Aplicar código crea un clip independiente con límite exacto de 30 fotogramas');
 
     await page.evaluate(()=>MGTTrackUI.select(null));
@@ -58,7 +58,7 @@ let child,browser,url,info;
     await page.locator('#projectDuration').fill('0.5');
     await page.locator('#projectDuration').dispatchEvent('change');
     await page.waitForFunction(()=>ready&&state.duration===.5);
-    assert.equal(await page.evaluate(()=>MGTMGTModel.snapshot()[0].frames),30);
+    assert.equal(await page.evaluate(()=>MGTTrackUI.snapshot()[0].frames),30);
     console.log('Ajustes generales cambian la duración sin alterar el clip');
 
     await page.click('#openExport');await page.selectOption('#quality','quick');await page.click('#beginExport');

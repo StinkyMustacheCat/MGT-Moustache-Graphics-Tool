@@ -19,6 +19,8 @@ const readEffect=store.readEffect;
 const subtitleStore=require('./subtitle-store.cjs').createStore(path.join(userRoot,'subtitulos'));
 subtitleStore.seed(path.join(root,'examples','subtitulos'));
 const Audio=require('./audio-store.cjs');
+const ProjectArchive=require('./project-archive.cjs');
+const MGTAsset=require('./mgt-asset.cjs');
 const audioStore=Audio.createStore(path.join(dataDir,'audio'),path.join(path.dirname(config.ffmpeg),'ffprobe.exe'),{keepSession:true});const waves=new Map(),waveAbort=new AbortController();
 let wavImporting=false;
 let importAbort;
@@ -26,6 +28,9 @@ let activeDownloads=0;
 let origin = 'http://127.0.0.1:' + config.port;
 const token = crypto.randomBytes(32).toString('hex');
 const jobs = new Map();
+const pendingProjects=new Map();
+function restoredProject(project,map){const snapshot=project.snapshot,restore=old=>{if(!old)return null;const audio=map.get(old.id);if(!audio)throw Error('Referencia de audio no encontrada: '+old.name);return {...old,...audio};};snapshot.audio.audio=restore(snapshot.audio.audio);for(const effect of snapshot.effects)effect.audio=restore(effect.audio);return {snapshot,settings:project.settings};}
+async function discardPending(pending){pendingProjects.delete(pending.token);for(const id of pending.added)audioStore.discard(id);await fs.promises.rm(pending.file,{force:true});}
 let active = null;
 let fonts;
 try {
@@ -39,9 +44,12 @@ async function body(req,max=40000000) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 function isCancelled(job) { if (job.cancelled) throw new Error('Exportación cancelada.'); }
-async function render(job, spec, composition, params, resolution, seed, bitrate, quick=false, audio=null,layers=null) {
+async function render(job, spec, composition, params, resolution, seed, bitrate, quick=false, audio=null,layers=null,renderOptions=null) {
   let browser, capture, encoder, encoderDone, finalStatus;
-  const temporary = path.join(output, job.id + '.part.mp4');
+  const profile=process.env.MGT_PROFILE_EXPORT==='1',jpeg=quick,metrics=profile?{prepareMs:0,drawMs:0,screenshotMs:0,drainMs:0,finalizeMs:0,totalMs:0}:null,started=profile?performance.now():0;
+  if(profile)job.metrics=metrics;
+  const fps=renderOptions?.fps??60,alpha=renderOptions?.alpha===true,extension=job.extension??'mp4';
+  const temporary = path.join(output, job.id + '.part.'+extension);
   try {
     for (const file of [config.chromium, config.ffmpeg]) if (!fs.existsSync(file)) throw new Error('No se encuentra una dependencia. Revisa config.json.');
     const [width, height] = Scene.sizes[spec.aspect];
@@ -58,8 +66,8 @@ async function render(job, spec, composition, params, resolution, seed, bitrate,
     let scene = page;
     let drawLayers;
     if(layers){drawLayers=await require('./layer-render-097.cjs').open(page,spec,composition,params,seed,layers,width,height,bounded);}else if (composition) {
-      await page.setContent('<style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%}</style><iframe sandbox="allow-scripts"></iframe>');
-      await page.locator('iframe').evaluate((el, html) => { el.srcdoc = html; }, Composition.documentHTML(composition, { width, height, duration:spec.duration, background:spec.background, params, seed }));
+      await page.setContent('<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:'+(alpha?'transparent':spec.background)+'}iframe{border:0;width:100%;height:100%;background:transparent}</style><iframe sandbox="allow-scripts"></iframe>');
+      await page.locator('iframe').evaluate((el, html) => { el.srcdoc = html; }, Composition.documentHTML(composition, { width, height, duration:renderOptions?.sourceDuration??spec.duration, background:alpha?'transparent':spec.background, overlay:alpha, params, seed }));
       scene = await (await page.$('iframe')).contentFrame();
       await scene.waitForFunction(() => !!window.sceneReady);
     } else await page.setContent(Scene.documentHTML(spec));
@@ -72,8 +80,14 @@ async function render(job, spec, composition, params, resolution, seed, bitrate,
     catch(error) { await ownedBrowser.close().catch(()=>{}); throw error; }
     return {
       capture: async frame => {
-        if(drawLayers)await drawLayers(frame);else await bounded(scene.evaluate(async f => { await window.setFrame(f); if (window.mgtError) throw new Error(window.mgtError); }, frame));
-        return page.screenshot({ type:'png', animations:'allow', scale:'device' });
+        const drawStart=profile?performance.now():0;
+        const sourceFrame=Math.round(frame*60/fps);
+        if(drawLayers)await drawLayers(sourceFrame);else await bounded(scene.evaluate(async f => { await window.setFrame(f); if (window.mgtError) throw new Error(window.mgtError); }, sourceFrame));
+        if(profile)metrics.drawMs+=performance.now()-drawStart;
+        const screenshotStart=profile?performance.now():0;
+        const png=await page.screenshot({ type:jpeg?'jpeg':'png', ...(jpeg?{quality:95}:{omitBackground:alpha}), animations:'allow', scale:'device' });
+        if(profile)metrics.screenshotMs+=performance.now()-screenshotStart;
+        return png;
       },
       lost: error => !error.message.includes('La composición no respondió') && (!ownedBrowser.isConnected() || page.isClosed() || /Target crashed|Page crashed/.test(error.message)),
       close: () => ownedBrowser.close()
@@ -82,8 +96,10 @@ async function render(job, spec, composition, params, resolution, seed, bitrate,
     });
     await capture.start();
     isCancelled(job);
+    if(profile)metrics.prepareMs=performance.now()-started;
     const compression=ExportSettings.compression(quick,bitrate),[outWidth,outHeight]=ExportSettings.dimensions(spec.aspect,resolution);
-    encoder = spawn(config.ffmpeg, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-vcodec', 'png', '-framerate', '60', '-i', 'pipe:0', ...(audio?.mix?require('./audio-mix.cjs').args(audio.clips,job.frames/60):Audio.muxArgs(audio,job.frames/60)), '-c:v', 'libx264', ...compression, '-vf', 'scale='+outWidth+':'+outHeight+':flags=lanczos,setsar=1', '-pix_fmt', 'yuv420p', '-r', '60', '-frames:v', String(job.frames), '-movflags', '+faststart', temporary], { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
+    const videoArgs=alpha?['-c:v','prores_ks','-profile:v','4444','-alpha_bits','16','-vf','scale='+outWidth+':'+outHeight+':flags=lanczos,format=yuva444p10le','-pix_fmt','yuva444p10le','-color_primaries','bt709','-color_trc','bt709','-colorspace','bt709']:['-c:v','libx264',...compression,'-vf','scale='+outWidth+':'+outHeight+':flags=lanczos,setsar=1','-pix_fmt','yuv420p'];
+    encoder = spawn(config.ffmpeg, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-vcodec', jpeg?'mjpeg':'png', '-framerate', String(fps), '-i', 'pipe:0', ...(audio?.mix?require('./audio-mix.cjs').args(audio.clips,job.frames/fps):Audio.muxArgs(audio,job.frames/fps)), ...videoArgs, '-r', String(fps), '-frames:v', String(job.frames), '-movflags', alpha?'+faststart+write_colr':'+faststart', temporary], { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
     let encoderError = '', spawnError;
     encoder.stderr.on('data', d => { encoderError = (encoderError + d).slice(-3000); });
     encoder.stdin.on('error', e => { spawnError = e; });
@@ -94,15 +110,17 @@ async function render(job, spec, composition, params, resolution, seed, bitrate,
       isCancelled(job);
       if (spawnError || encoder.exitCode !== null) throw new Error('No se pudo comprimir el video: ' + (spawnError?.message || encoderError));
       const png = await capture.capture(frame);
-      if (!encoder.stdin.write(png)) await require('./encoder-drain.cjs').waitForDrain(encoder.stdin);
+      if (!encoder.stdin.write(png)){const drainStart=profile?performance.now():0;await require('./encoder-drain.cjs').waitForDrain(encoder.stdin);if(profile)metrics.drainMs+=performance.now()-drainStart;}
       job.completed = frame + 1;
     }
     job.status = 'encoding';
+    const finalizeStart=profile?performance.now():0;
     encoder.stdin.end();
     const code = await encoderDone;
+    if(profile)metrics.finalizeMs=performance.now()-finalizeStart;
     isCancelled(job);
     if (code !== 0) throw new Error('No se pudo comprimir el video. ' + encoderError);
-    fs.renameSync(temporary, path.join(output, job.id + '.mp4'));
+    fs.renameSync(temporary, path.join(output, job.id + '.'+extension));
     finalStatus = 'done';
   } catch (error) {
     finalStatus = job.cancelled ? 'cancelled' : 'error';
@@ -111,6 +129,7 @@ async function render(job, spec, composition, params, resolution, seed, bitrate,
     if (encoderDone) await encoderDone;
     fs.rmSync(temporary, { force: true });
   } finally {
+    if(profile)metrics.totalMs=performance.now()-started;
     if (capture) await capture.close();
     if (browser) await browser.close().catch(() => {});
     job.cancel = null;
@@ -163,6 +182,39 @@ const server = http.createServer(async (req, res) => {
     }
     if(req.method==='POST'&&url.pathname==='/api/audio/select'){const input=await body(req);return json(res,200,{audio:audioStore.select(input.id)});}
     if(req.method==='POST'&&url.pathname==='/api/audio/discard'){const input=await body(req);audioStore.discard(input.id);return json(res,200,{ok:true});}
+    if(req.method==='POST'&&url.pathname==='/api/project/save'){
+      const input=await body(req,ProjectArchive.MAX_PROJECT),snapshot=input.snapshot;
+      if(!snapshot||typeof snapshot!=='object'||!snapshot.state||!snapshot.tracks||!Array.isArray(snapshot.effects)||!snapshot.audio||!ExportSettings.resolutions.includes(input.settings?.resolution))throw Error('Proyecto no válido.');
+      const ids=[snapshot.audio.audio?.id,...snapshot.effects.map(effect=>effect.audio?.id)].filter(Boolean);
+      if(new Set(ids).size>64)throw Error('Demasiados recursos de audio.');
+      const held=[],resources=[],entries=[],id=crypto.randomUUID(),file=path.join(output,id+'.mgtproj');
+      try{
+        for(const audioId of new Set(ids)){const item=audioStore.acquire(audioId);held.push(item.id);const name='audio/'+(resources.length+1)+'.wav';resources.push({id:audioId,name:item.name,entry:name});entries.push({name,file:item.file});}
+        const project={format:'mgt-project',version:1,snapshot,settings:input.settings,resources};
+        entries.unshift({name:'project.json',data:JSON.stringify(project)});
+        await ProjectArchive.create(file,entries);
+        return json(res,201,{url:'/api/project/'+id+'/download',filename:String(input.filename||'Proyecto MGT').replace(/[^\p{L}\p{N} _.-]/gu,'').slice(0,80).trim()||'Proyecto MGT'});
+      }finally{for(const audioId of held)audioStore.release(audioId);}
+    }
+    const projectDownload=url.pathname.match(/^\/api\/project\/([a-f0-9-]{36})\/download$/);
+    if(req.method==='GET'&&projectDownload){const file=path.join(output,projectDownload[1]+'.mgtproj');if(!fs.existsSync(file))return json(res,404,{error:'Proyecto no encontrado.'});res.writeHead(200,{'Content-Type':'application/zip','Content-Length':fs.statSync(file).size,'Content-Disposition':'attachment; filename="Proyecto MGT.mgtproj"'});const stream=fs.createReadStream(file);stream.once('error',()=>res.destroy());stream.once('close',()=>fs.promises.rm(file,{force:true}).catch(()=>{}));res.once('close',()=>stream.destroy());stream.pipe(res);return;}
+    if(req.method==='POST'&&url.pathname==='/api/project/open'){
+      for(const pending of pendingProjects.values())if(Date.now()-pending.created>60*60*1000)await discardPending(pending);
+      if(pendingProjects.size>=4)throw Error('Termina o cancela otro proyecto pendiente de reenlace.');
+      const file=path.join(output,crypto.randomUUID()+'.incoming.mgtproj'),handle=await fs.promises.open(file,'wx'),added=[];let retained=false;
+      try{
+        let size=0;for await(const chunk of req){size+=chunk.length;if(size>ProjectArchive.MAX_ARCHIVE)throw Error('Proyecto demasiado grande.');let written=0;while(written<chunk.length){const part=await handle.write(chunk,written,chunk.length-written);if(!part.bytesWritten)throw Error('No se pudo recibir el proyecto.');written+=part.bytesWritten;}}await handle.close();
+        const entries=await ProjectArchive.inspect(file),project=await ProjectArchive.readJSON(file,entries.get('project.json'));
+        if(project?.format!=='mgt-project'||project.version!==1||!project.snapshot?.state||!project.snapshot?.tracks||!Array.isArray(project.snapshot.effects)||!project.snapshot.audio||!Array.isArray(project.resources)||project.resources.length>64||!ExportSettings.resolutions.includes(project.settings?.resolution))throw Error('Formato de proyecto no compatible.');
+        const map=new Map(),missing=[];
+        for(const resource of project.resources){if(typeof resource.id!=='string'||typeof resource.name!=='string'||!/^audio\/[0-9]{1,3}\.wav$/.test(resource.entry)||map.has(resource.id)||missing.some(m=>m.id===resource.id))throw Error('Manifest de audio no válido.');const entry=entries.get(resource.entry);if(!entry){missing.push({id:resource.id,name:resource.name});continue;}try{await ProjectArchive.verify(file,entry);const audio=await audioStore.upload(ProjectArchive.stream(file,entry),resource.name);added.push(audio.id);map.set(resource.id,audio);}catch{missing.push({id:resource.id,name:resource.name});}}
+        const refs=[project.snapshot.audio.audio?.id,...project.snapshot.effects.map(effect=>effect.audio?.id)].filter(Boolean);if(refs.some(id=>!project.resources.some(r=>r.id===id)))throw Error('El proyecto tiene referencias de audio sin declarar.');
+        if(missing.length){const token=crypto.randomUUID();pendingProjects.set(token,{token,file,project,map,added,missing,created:Date.now()});retained=true;return json(res,200,{relinkToken:token,missing});}
+        return json(res,200,restoredProject(project,map));
+      }catch(error){for(const id of added)audioStore.discard(id);throw error;}finally{await handle.close().catch(()=>{});if(!retained)await fs.promises.rm(file,{force:true});}
+    }
+    const pendingMatch=url.pathname.match(/^\/api\/project\/([a-f0-9-]{36})\/(relink|complete|cancel)$/);
+    if(req.method==='POST'&&pendingMatch){const pending=pendingProjects.get(pendingMatch[1]);if(!pending)return json(res,404,{error:'Proyecto pendiente no encontrado; vuelve a abrirlo.'});const action=pendingMatch[2];if(action==='cancel'){await discardPending(pending);return json(res,200,{ok:true});}if(action==='relink'){const resource=pending.missing.find(item=>item.id===url.searchParams.get('id'));if(!resource)throw Error('Recurso pendiente no encontrado.');const audio=await audioStore.upload(req,resource.name);pending.added.push(audio.id);pending.map.set(resource.id,audio);pending.missing=pending.missing.filter(item=>item!==resource);return json(res,200,{audio,missing:pending.missing});}if(pending.missing.length)throw Error('Faltan recursos por reenlazar.');const result=restoredProject(pending.project,pending.map);pendingProjects.delete(pending.token);await fs.promises.rm(pending.file,{force:true});return json(res,200,result);}
     const waveMatch=url.pathname.match(/^\/api\/audio\/([a-f0-9-]{36})\/waveform$/);if(req.method==='GET'&&waveMatch){const id=waveMatch[1],audio=audioStore.acquire(id);try{if(!waves.has(id))waves.set(id,require('./waveform.cjs').peaks(config.ffmpeg,audio.file,audio.duration,{signal:waveAbort.signal}).catch(e=>{waves.delete(id);throw e;}));return json(res,200,await waves.get(id));}finally{audioStore.release(id);}}
     const audioMatch=url.pathname.match(/^\/api\/audio\/([a-f0-9-]{36})$/);
     if(req.method==='GET'&&audioMatch){audioStore.serve(req,res,audioMatch[1]);return;}
@@ -210,6 +262,20 @@ const server = http.createServer(async (req, res) => {
       }
       res.setHeader('Connection','close');json(res,200,{ok:true});server.close();server.closeIdleConnections();return;
     }
+    if(req.method==='POST'&&url.pathname==='/api/asset/preflight'){
+      const contract=MGTAsset.prepare(await body(req,50*1024*1024));
+      new Function('ctx',contract.document.render);
+      return json(res,200,{ok:true,...MGTAsset.publicContract(contract),name:contract.document.name,recommended:contract.document.recommended??null});
+    }
+    if(req.method==='POST'&&url.pathname==='/api/asset/render'){
+      if(active)return json(res,409,{error:'Ya hay una exportación en curso.'});
+      const contract=MGTAsset.prepare(await body(req,50*1024*1024));
+      new Function('ctx',contract.document.render);
+      const job={id:crypto.randomUUID(),status:'preparing',completed:0,frames:contract.frames,cancelled:false,kind:'asset',extension:'mov',createdAt:Date.now(),filename:contract.document.name.replace(/[^\p{L}\p{N} _.-]/gu,'').slice(0,80).trim()||'MGT',fingerprint:contract.fingerprint};
+      jobs.set(job.id,job);active=job;json(res,202,{id:job.id,...MGTAsset.publicContract(contract)});
+      void render(job,contract.scene,contract.document,contract.params,contract.resolution,contract.seed,null,false,null,null,{fps:contract.fps,alpha:true,sourceDuration:contract.duration});
+      return;
+    }
     if (req.method === 'POST' && url.pathname === '/api/export') {
       if (active) return json(res, 409, { error: 'Ya hay una exportación en curso.' });
       const input = await body(req,160*1024*1024), spec = Scene.normalize(input.scene);
@@ -223,25 +289,29 @@ const server = http.createServer(async (req, res) => {
       if (!ExportSettings.resolutions.includes(resolution)) throw new Error('Resolución no admitida.');
       if (!composition && !fonts.includes(spec.font)) throw new Error('Elige una fuente instalada de la lista.');
       const job = { id: crypto.randomUUID(), status: 'preparing', completed: 0, frames: Math.round(spec.duration * 60), cancelled: false, filename: String(input.filename || 'texto-motion').replace(/\.mp4$/i, '').replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 80).trim() || 'texto-motion' };
-      const layers=input.layers?require('./layer-render-097.cjs').normalize(input.layers,spec):null;let audio=null;if(input.effects!==undefined||input.audioSettings!==undefined||layers){const refs=[],clips=[];try{const settings=input.audioSettings??{volume:1,muted:false};if(!Number.isFinite(settings.volume)||settings.volume<0||settings.volume>1||typeof settings.muted!=='boolean')throw Error('Volumen principal no válido.');if(input.audioId){const a=audioStore.acquire(input.audioId);refs.push(a.id);clips.push({...a,input:0,output:a.duration,start:0,volume:settings.volume,muted:settings.muted||layers?.flags.audio.muted===true});}if(!Array.isArray(input.effects??[])||(input.effects??[]).length>64)throw Error('Hasta 64 efectos.');for(const raw of input.effects??[]){const a=audioStore.acquire(raw.audio?.id);refs.push(a.id);const c=require('./public/effects.js').normalize({...raw,audio:{id:a.id,duration:a.duration}});if(c.start<spec.duration)clips.push({...c,file:a.file,muted:c.muted||layers?.flags.effects.muted===true});}audio={mix:true,ids:refs,clips};}catch(e){for(const id of refs)audioStore.release(id);throw e;}}else audio=input.audioId?audioStore.acquire(input.audioId):null;
+      const layers=input.layers?require('./layer-render-097.cjs').normalize(input.layers,spec):null;let audio=null;if(input.effects!==undefined||input.audioSettings!==undefined||layers){const refs=[],clips=[];try{const settings=input.audioSettings??{volume:1,muted:false};if(!Number.isFinite(settings.volume)||settings.volume<0||settings.volume>1||typeof settings.muted!=='boolean')throw Error('Volumen principal no válido.');if(input.audioId){const a=audioStore.acquire(input.audioId);refs.push(a.id);clips.push({...a,input:0,output:a.duration,start:0,volume:settings.volume,muted:settings.muted||layers?.flags.audio.muted===true||layers?.flags['audio-1']?.muted===true});}if(!Array.isArray(input.effects??[])||(input.effects??[]).length>64)throw Error('Hasta 64 clips de audio.');for(const raw of input.effects??[]){const a=audioStore.acquire(raw.audio?.id);refs.push(a.id);const c=require('./public/effects.js').normalize({...raw,audio:{id:a.id,duration:a.duration}});if(c.start<spec.duration)clips.push({...c,file:a.file,muted:c.muted||layers?.flags[c.trackId]?.muted===true});}audio={mix:true,ids:refs,clips};}catch(e){for(const id of refs)audioStore.release(id);throw e;}}else audio=input.audioId?audioStore.acquire(input.audioId):null;
       jobs.set(job.id, job); active = job;
       json(res, 202, { id: job.id });
       void render(job, spec, composition, params, resolution, seed, bitrate, quick, audio,layers);
       return;
     }
-    const match = url.pathname.match(/^\/api\/jobs\/([a-f0-9-]{36})(\/download|\/cancel)?$/);
+    const match = url.pathname.match(/^\/api\/jobs\/([a-f0-9-]{36})(\/download|\/cancel|\/release)?$/);
     if (match) {
       const job = jobs.get(match[1]);
       if (!job) return json(res, 404, { error: 'Exportación no encontrada.' });
       if (req.method === 'POST' && match[2] === '/cancel') { if (['preparing', 'rendering', 'encoding'].includes(job.status)) { job.cancelled = true; job.cancel?.(); } return json(res, 200, { ok: true }); }
+      if(req.method==='POST'&&match[2]==='/release'){if(job.kind!=='asset')return json(res,400,{error:'Solo se pueden liberar trabajos de assets MGT.'});if(['preparing','rendering','encoding'].includes(job.status)||activeDownloads>0)return json(res,409,{error:'Espera a que termine la exportación y la descarga.'});fs.rmSync(path.join(output,job.id+'.mov'),{force:true});jobs.delete(job.id);return json(res,200,{ok:true});}
       if (req.method === 'GET' && match[2] === '/download' && job.status === 'done') {
-        const file = path.join(output, job.id + '.mp4');
-        res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(file).size, 'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(job.filename + '.mp4') });
+        const extension=job.extension??'mp4',file=path.join(output,job.id+'.'+extension);
+        res.writeHead(200, { 'Content-Type': extension==='mov'?'video/quicktime':'video/mp4', 'Content-Length': fs.statSync(file).size, 'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(job.filename + '.'+extension) });
         activeDownloads++;const stream=fs.createReadStream(file);let released=false;const release=()=>{if(!released){released=true;activeDownloads--;}};stream.once('close',release);stream.once('error',()=>res.destroy());res.once('close',()=>stream.destroy());stream.pipe(res); return;
       }
-      if (req.method === 'GET' && !match[2]) return json(res, 200, { id: job.id, status: job.status, completed: job.completed, frames: job.frames, error: job.error, filename: job.filename + '.mp4' });
+      if (req.method === 'GET' && !match[2]) return json(res, 200, { id: job.id, status: job.status, completed: job.completed, frames: job.frames, error: job.error, filename: job.filename + '.'+(job.extension??'mp4'), ...(job.fingerprint?{fingerprint:job.fingerprint}:{}) ,...(job.metrics?{metrics:job.metrics}:{}) });
     }
     const files = { '/media-input.js':'media-input.js', '/base-video.js':'base-video.js', '/animated-svg.js':'animated-svg.js','/svg-controls.js':'svg-controls.js','/svg-template.js':'svg-template.js','/animated-contract':'animated-contract.txt', '/gifs.js':'gifs.js','/gif-controls.js':'gif-controls.js','/gif-template.js':'gif-template.js','/gif-contract':'gif-contract.txt', '/videos.js':'videos.js','/video-controls.js':'video-controls.js','/video-template.js':'video-template.js','/video-contract':'video-contract.txt', '/': 'index.html', '/style.css': 'style.css', '/app.js': 'app.js', '/prompts.js': 'prompts.js', '/prompt':'prompts/motion.txt', '/prompt/motion':'prompts/motion.txt', '/prompt/3d':'prompts/3d.txt', '/prompt/images':'prompts/images.txt', '/prompt/media':'prompts/media.txt', '/prompt/subtitles':'prompts/subtitles.txt', '/effects.js':'effects.js','/effects-controls.js':'effects-controls.js','/history-controls.js':'history-controls.js','/paste-placement.js':'paste-placement.js','/track-edit.js':'track-edit.js','/track-state.js':'track-state.js','/tracks.js':'tracks.js', '/track-controls.js':'track-controls.js', '/scene.js': 'scene.js', '/composition.js':'composition.js', '/image-clip.js':'image-clip.js', '/three-controls.js':'three-controls.js','/model-template.js':'model-template.js','/models.js':'models.js','/glb-engine.js':'glb-engine.js','/model-controls.js':'model-controls.js','/three.js':'three.js', '/three-template.js':'three-template.js', '/export-settings.js':'export-settings.js', '/subtitles.js':'subtitles.js', '/subtitle-controls.js':'subtitle-controls.js', '/audio-controls.js':'audio-controls.js', '/subtitle-contract':'SUBTITULOS.md', '/assets.js':'assets.js', '/image-controls.js':'image-controls.js', '/contract':'contract.txt', '/icon.png':'icon.png', '/icon.ico':'icon.ico' };
+    files['/overlay-lanes.js']='overlay-lanes.js';
+    files['/prompt']='prompts/general.txt';
+    files['/prompt/general']='prompts/general.txt';
     if (req.method === 'GET' && Object.hasOwn(files, url.pathname)) {
       const file = files[url.pathname];
       res.writeHead(200, { 'Content-Type': file.endsWith('.ico') ? 'image/x-icon' : file.endsWith('.png') ? 'image/png' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : file.endsWith('.css') ? 'text/css; charset=utf-8' : file.endsWith('.txt') ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -259,7 +329,8 @@ server.on('error',error=>{
   if(error.code==='EADDRINUSE'&&attempts++<20){config.port++;origin='http://127.0.0.1:'+config.port;server.listen(config.port,'127.0.0.1');return;}
   console.error(error.message);fs.appendFileSync(path.join(dataDir,'server-error.log'),error.message+'\n');process.exitCode=1;
 });
-server.on('close',()=>{waveAbort.abort();audioStore.close();try{if(JSON.parse(fs.readFileSync(runtimeFile,'utf8')).pid===process.pid)fs.rmSync(runtimeFile,{force:true});}catch{}});
+const assetPruner=setInterval(()=>{if(activeDownloads)return;const cutoff=Date.now()-60*60*1000;for(const job of jobs.values())if(job.kind==='asset'&&job.createdAt<cutoff&&!['preparing','rendering','encoding'].includes(job.status)){try{fs.rmSync(path.join(output,job.id+'.mov'),{force:true});jobs.delete(job.id);}catch(error){console.error('No se pudo liberar el asset '+job.id+': '+error.message);}}},5*60*1000);assetPruner.unref();
+server.on('close',()=>{clearInterval(assetPruner);waveAbort.abort();for(const pending of pendingProjects.values())fs.rmSync(pending.file,{force:true});pendingProjects.clear();audioStore.close();try{if(JSON.parse(fs.readFileSync(runtimeFile,'utf8')).pid===process.pid)fs.rmSync(runtimeFile,{force:true});}catch{}});
 server.listen(config.port,'127.0.0.1');
 function stop() { importAbort?.abort(); active && (active.cancelled = true); active?.cancel?.(); server.close(); }
 process.on('SIGINT', stop); process.on('SIGTERM', stop);

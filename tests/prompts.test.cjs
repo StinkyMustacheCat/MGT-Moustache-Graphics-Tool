@@ -7,6 +7,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const promptDir=path.join(root,'public','prompts');
 const prompts=Object.fromEntries(['motion','3d','images','media','subtitles'].map(id=>[id,fs.readFileSync(path.join(promptDir,id+'.txt'),'utf8')]));
+const general=fs.readFileSync(path.join(promptDir,'general.txt'),'utf8');
 const index=fs.readFileSync(path.join(root,'public','index.html'),'utf8');
 const app=fs.readFileSync(path.join(root,'public','app.js'),'utf8');
 const server=fs.readFileSync(path.join(root,'server.cjs'),'utf8');
@@ -67,4 +68,11 @@ test('cada prompt especializado cubre los campos que realmente implementa MGT',(
   assert.match(prompts.subtitles,/timing.*cue.*word.*estimated/s);
   assert.match(prompts.subtitles,/ctx\.subtitles\.at/);
   assert.match(prompts.subtitles,/no transcribas audio/i);
+});
+test('el prompt general reúne medios y motion graphics bajo el contrato MGT',()=>{
+  assert.match(index,/data-prompt="general"/);
+  assert.match(server,/prompts\/general\.txt/);
+  for(const part of ['parameters','html','css','render','ctx.random','data-mgt-image','data-mgt-video','data-mgt-gif','data-mgt-svg','subtitles','scene3d','60 FPS','saltos hacia atrás'])assert.ok(general.includes(part),part);
+  assert.match(general,/motion graphics e imágenes/);
+  assert.match(app,/copySpecializedPrompt\('general',status\)/);
 });

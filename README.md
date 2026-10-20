@@ -1,8 +1,9 @@
-# Moustache Graphics Tool (MGT) 1.0.0
-**Descargas:** [MGT 1.0.0 para Windows x64 (ZIP portable)](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/download/v1.0.0/MGT-1.0.0-win-x64.zip) ? [SHA-256](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/download/v1.0.0/MGT-1.0.0-win-x64.zip.sha256).
+# Moustache Graphics Tool (MGT) 1.5.2
+
+**Descargas:** [MGT 1.5.2 para Windows x64 (ZIP portable)](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/download/v1.5.2/MGT-1.5.2-portable.zip) | [SHA-256](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/download/v1.5.2/MGT-1.5.2-portable.zip.sha256).
 
 
-Código fuente de MGT para Windows x64. La v1 permite crear composiciones y exportar MP4 durante una sesión; todavía no guarda ni reabre proyectos completos.
+Código fuente de MGT para Windows x64. Esta versión organiza la línea de tiempo en pistas visuales y de audio, permite guardar y reabrir proyectos completos y ofrece un contrato local para renderizar composiciones MGT como assets con transparencia. La especificación de integración está en [MGT-ASSET-CONTRACT.md](docs/MGT-ASSET-CONTRACT.md).
 
 ## Desarrollo local
 

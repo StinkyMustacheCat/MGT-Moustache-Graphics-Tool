@@ -1,3 +1,7 @@
+# MGT 1.5.2 - proyectos completos y assets MGT
+
+La linea de tiempo se organiza en pistas visuales y de audio, se pueden guardar y reabrir proyectos completos y se incorpora un contrato local para renderizar composiciones MGT como assets con transparencia. La especificacion del contrato esta en MGT-ASSET-CONTRACT.md.
+
 # MGT 1.0.0 · primera versión estable por sesión
 
 Entrega completa para Windows x64. El portapapeles de MGT ya no intercepta Ctrl+V cuando otra pista está activa; cortar y pegar subtítulos tras copiar MGT vuelve a funcionar. Las nueve integraciones históricas se adaptaron al flujo de clips y pistas compactas y pasan junto con las pruebas vigentes y unitarias. Esta versión trabaja por sesión; guardar y volver a abrir proyectos completos queda para una etapa posterior.

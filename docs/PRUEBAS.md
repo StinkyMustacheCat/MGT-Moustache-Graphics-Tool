@@ -1,4 +1,23 @@
+# MGT 1.5.2 - pruebas
+
+El paquete incluye pruebas para el archivo y reapertura de proyectos (project-archive.test.cjs, project-roundtrip.integration.cjs), los assets MGT (mgt-asset.test.cjs, asset-render.integration.cjs), pistas de linea de tiempo y edicion. Ejecuta las unitarias desde programa/ con node --test tests/*.test.cjs; las integraciones se ejecutan individualmente con el runtime configurado.
+
+Los resultados y conteos bajo encabezados de versiones anteriores describen esas versiones; no son una declaracion de ejecucion de pruebas para este ZIP.
+
+## MGT 1.4.0 - pruebas (historico)
+
+`node --test tests/*.test.cjs` cubre 131 contratos internos. Las 11 integraciones vigentes en `tests/*.integration.cjs` pasaron con el runtime incluido. `overlay-lanes.integration.cjs` verifica pistas Overlay, superposición, traslado, recorte y ajuste al proyecto; `tracks-edit.integration.cjs` cubre duración recomendada/manual, historial, reemplazo de recursos, guardado contextual en Galería, pegado y Ctrl+Z. `project-roundtrip.integration.cjs` guarda un proyecto, reinicia el servidor y comprueba la reapertura de pistas y WAV, además del reenlace de un WAV omitido; `project-effects.integration.cjs` verifica efectos, recortes, ganancia y ajustes de exportación. `resources.integration.cjs` abre ejemplos 3D, GLB, vídeo, GIF y SVG animado en Overlay y salta entre fotogramas; `media-input.integration.cjs` cubre formatos de entrada. `export-tracks.integration.cjs` produce MP4 y comprueba fotogramas, capas, transparencia y mezcla de audio. Las suites de la interfaz antigua de seis pistas se conservan en `tests/legacy/` como referencia histórica y no se ejecutan contra 1.4.0.
+
+
 # MGT 1.0.0 · pruebas de la primera versión estable
+
+## Medios y lienzo para 1.0.3 (rama de desarrollo)
+
+`tests/tracks-edit.integration.cjs` comprueba que el menú contextual ofrece reemplazo cuando el clip tiene un recurso cargado en un parámetro declarado; usa el selector de archivos existente y conserva las validaciones de cada tipo. Comprueba también que una imagen agregada como clip se mueve desde el lienzo con ratón o teclado, actualiza sus parámetros de posición, admite deshacer y expone «Encuadrar medio». `tests/base-video.integration.cjs` verifica la misma posición directa y el menú de reemplazo para vídeo base, además de su exportación real. El control de arrastre se muestra para los clips de imagen/vídeo que usan los parámetros de posición y tamaño de las plantillas integradas; un MGT arbitrario sin esos parámetros sigue editándose por su inspector, no se mueve a ciegas.
+
+## Medición de exportación para 1.0.2 (rama de desarrollo)
+
+Con `MGT_PROFILE_EXPORT=1`, la respuesta de `/api/jobs/:id` añade `metrics` (milisegundos de preparación, dibujo, captura, espera del codificador, cierre y total). La medición se desactiva por defecto. Ejecutar `node tests/export-tracks.integration.cjs` verifica los MP4 normales y rápidos; el modo rápido usa capturas JPEG de calidad 95 y el modo normal conserva PNG. El FFmpeg incluido solo ofrece `libx264`, sin H.264 por hardware. En este equipo (Ryzen 9 3900, 24 hilos), dos exportaciones de 72 fotogramas a 480p dieron 4,56–4,68 s con PNG y 4,29 s con JPEG experimental; la captura consumió 3,59–3,67 s y la espera del codificador fue 0 ms. La comparación entre los MP4 arrojó PSNR promedio de 51,13 dB. Es una muestra acotada, no una garantía de rendimiento en otros equipos ni en 4K.
 
 Las 114 pruebas unitarias y las 15 integraciones de navegador están en el alcance de esta versión. Las nueve integraciones históricas se adaptaron a clips MGT independientes, duración general y pistas compactas; también resuelven las rutas del runtime desde la configuración de la aplicación, no desde el directorio actual de la terminal. La prueba de medios usa fixtures sintéticos incluidos en `tests/fixtures/media-input/`, por lo que no necesita codificadores opcionales en el FFmpeg del producto. La regresión de edición comprueba que Ctrl+V pega subtítulos tras cortar esa pista aunque antes se haya copiado un MGT. Las pruebas verifican el funcionamiento por sesión; no implican guardado y restauración de proyectos completos ni sustituyen una prueba en otro equipo.
 
