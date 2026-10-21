@@ -1,6 +1,6 @@
-# MGT 1.5.2 — contrato local de assets (v1)
+# MGT 1.6.4 — contrato local de assets (v1)
 
-Esta API prepara composiciones `.mgt.json` completas para que un editor externo las use como medios visuales. **No integra Prometheus por sí sola.** En esta primera etapa no hay parámetros editables desde el editor externo, transiciones MGT ni audio de asset. Los efectos externos se aplicarían al video resultante, no a los parámetros internos.
+Esta API prepara composiciones `.mgt.json` completas para que una aplicación anfitriona las use como medios visuales. El motor proporciona el contrato local, no un adaptador de NLE. En esta versión no hay transiciones MGT ni audio de asset v1. Los efectos externos se aplicarían al video resultante, no a los parámetros internos.
 
 ## Ciclo de vida
 
@@ -15,14 +15,14 @@ Las llamadas POST deben incluir `Origin` igual a la URL local del servidor, `X-M
 
 ## Formato y tiempo
 
-- Salida: MOV, ProRes 4444 (`prores_ks`), píxeles con alfa (`yuva444p12le` al decodificar), matriz de color `bt709` y rango `tv`. Antes de darlo por integrado, Prometheus debe comprobar que su propia ruta de decodificación y composición conserva el canal alfa y el aspecto; no basta con aceptar el archivo MOV.
+- Salida: MOV, ProRes 4444 (`prores_ks`), píxeles con alfa (`yuva444p12le` al decodificar), matriz de color `bt709` y rango `tv`. La aplicación anfitriona debe comprobar que su propia ruta de decodificación y composición conserva el canal alfa y el aspecto; no basta con aceptar el archivo MOV.
 - La duración visible está cuantizada: `frames = round(duration × fps)` y `encodedDuration = frames / fps`. La línea de tiempo debe usar `frames`/`encodedDuration`, no asumir que la duración decimal solicitada coincide exactamente con la codificada.
-- El reloj interno de MGT sigue a 60 FPS. Cada cuadro de salida `n` evalúa el cuadro interno `round(n × 60 / fps)`. La velocidad de un clip en Prometheus se aplica **después** al asset completo; no altera el reloj de la composición MGT.
+- El reloj interno de MGT sigue a 60 FPS. Cada cuadro de salida `n` evalúa el cuadro interno `round(n × 60 / fps)`. La velocidad del clip anfitrión se aplica **después** al asset completo; no altera el reloj de la composición MGT.
 - El perfil preview reduce resolución pero conserva tiempo, cuadros y alfa. El perfil final puede tener otra resolución. `fingerprint` es SHA-256 del contrato normalizado (JSON, perfil, FPS, cuadros, aspecto, resolución, semilla y parámetros). Sirve como clave de caché, no como garantía de pureza del código JavaScript.
-- El asset v1 utiliza exactamente semilla y parámetros contenidos en el JSON. Se rechazan overrides `params` o `seed`. El ajuste de encuadre es responsabilidad del clip en Prometheus. El JSON transporta el código y recursos incrustados como hoy, sin inventar otro contenedor.
+- El asset v1 utiliza exactamente semilla y parámetros contenidos en el JSON. Se rechazan overrides `params` o `seed`. El ajuste de encuadre es responsabilidad del clip anfitrión. El JSON transporta el código y recursos incrustados como hoy, sin inventar otro contenedor.
 
 ## Límites y preflight del adaptador
 
-Se rechazan llamadas obvias a reloj externo, red y aleatoriedad (`Date`, `performance`, `setTimeout`, `requestAnimationFrame`, `fetch`, `Math.random`, etc.), así como URLs externas evidentes en HTML/CSS. Esto **no prueba formalmente determinismo** de JavaScript arbitrario; la reproducibilidad se ha verificado con composiciones de prueba. El adaptador debe informar los fallos reales de render, recursos ausentes e incompatibilidades antes de exportar la secuencia final. La etapa «resolver medios» de Prometheus debe repetir el render en perfil final y no sustituir silenciosamente un asset de vista ligera si falla.
+Se rechazan llamadas obvias a reloj externo, red y aleatoriedad (`Date`, `performance`, `setTimeout`, `requestAnimationFrame`, `fetch`, `Math.random`, etc.), así como URLs externas evidentes en HTML/CSS. Esto **no prueba formalmente determinismo** de JavaScript arbitrario; la reproducibilidad se ha verificado con composiciones de prueba. El adaptador anfitrión debe informar los fallos reales de render, recursos ausentes e incompatibilidades antes de exportar la secuencia final. Debe repetir el render en perfil final y no sustituir silenciosamente un asset de vista ligera si falla.
 
-Se ensayaron 15/24/30/60 FPS, preview/final, alfa transparente/opaco/parcial, selección no secuencial de cuadros y limpieza de trabajos. Falta validar el adaptador real de Prometheus y una prueba en un equipo distinto antes de prometer interoperabilidad completa.
+Se ensayaron 15/24/30/60 FPS, preview/final, alfa transparente/opaco/parcial, selección no secuencial de cuadros y limpieza de trabajos. No se incluye ni se declara compatible ningún adaptador de NLE; la aplicación anfitriona debe validar su integración y la ruta de decodificación en sus propios entornos.

@@ -1,0 +1,15 @@
+{
+  "format": "mgt.json",
+  "document": {
+    "version": 3,
+    "name": "Tarjeta de ejemplo",
+    "parameters": [
+      { "id": "color", "label": "Color", "type": "color", "default": "#ff0000" },
+      { "id": "title", "label": "Título", "type": "text", "default": "Ejemplo MGT" }
+    ],
+    "html": "<div id=\"card\"><span id=\"title\"></span></div>",
+    "css": "#card{position:absolute;left:15%;top:35%;width:70%;height:30%;display:grid;place-items:center;color:white;font:100px Arial}",
+    "render": "ctx.root.querySelector('#card').style.background=ctx.params.color;ctx.root.querySelector('#title').textContent=ctx.params.title;",
+    "recommended": { "duration": 2, "aspect": "horizontal", "resolution": 1080 }
+  }
+}

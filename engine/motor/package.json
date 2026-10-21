@@ -1,0 +1,10 @@
+{
+  "name": "moustache-graphics-tool",
+  "version": "1.6.4",
+  "private": true,
+  "description": "Moustache Graphics Tool: motor autónomo con API local de assets",
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "license": "GPL-3.0-or-later"
+}

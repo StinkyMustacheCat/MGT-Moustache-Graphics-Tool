@@ -1,4 +1,4 @@
-# Inicio y cierre · MGT 1.5.2
+# Inicio y cierre · MGT 1.6.4
 
 Abre **MGT.exe** o **Iniciar MGT.cmd**. No se abre una consola ni una ventana de lanzamiento adicional. El programa inicia su servidor, comprueba la conexión y verifica que la vista real termine de prepararse. El aviso de inicio y Reintentar siguen disponibles dentro de la interfaz.
 
@@ -28,4 +28,3 @@ Al iniciar, Chromium puede mostrar: “You are using an unsupported command-line
 
 
 La cancelación de una lectura WAV se probó con un subproceso de ensayo ralentizado: el proceso y servidor terminaron y se retiraron sus medios temporales. La cancelación no permite borrar temporales antes de recibir el cierre del subproceso.
-

@@ -5,7 +5,7 @@ const Scene = window.MotionScene;
 const Composition = window.MGTComposition;
 let custom = null, params = {}, mainPresent = false, draftDirty = false, customChannel = '', readyTimer;
 let seed = 1, selectedStop = '', customRect = null, undoSnapshot = null;
-let mgDuration=Scene.defaults.duration, mgStart=0;
+let mgDuration=Scene.defaults.duration, mgStart=0, projectFps=60;
 let state = structuredClone(Scene.defaults), mode = 'start', currentFrame = 0;
 let playing = false, raf = 0, ready = false, valid = true, info = null, busy = false, renderId = null;
 let zoomPercent = 30;
@@ -15,11 +15,13 @@ let fitView=true, lastScale=0, pendingApply=null, appliedDraft='', cleanDraft=''
 const frameCount = () => Math.round(state.duration * Scene.FPS);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function tell(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
-function setButtons() { window.MGTAudio?.controls();window.MGTTrackUI?.sync(); $('openExport').disabled = !ready || !valid || !info?.ready || busy || window.MGTAudio?.loading() || window.MGTTrackUI?.preparing() || window.MGTEffectUI?.loading() || window.MGTHistory?.status().applying; $('play').disabled = !ready || !valid || window.MGTTrackUI?.preparing();window.MGTTrackState?.sync();window.MGTHistory?.controls(); }
+function setButtons() { window.MGTAudio?.controls();window.MGTTrackUI?.sync(); $('openExport').disabled = !ready || !valid || !info?.ready || busy || window.MGTAudio?.loading() || window.MGTTrackUI?.preparing() || window.MGTEffectUI?.loading() || window.MGTHistory?.status().applying;$('openExportFromInspector').disabled=$('openExport').disabled;$('projectFps').disabled=busy; $('play').disabled = !ready || !valid || window.MGTTrackUI?.preparing();window.MGTTrackState?.sync();window.MGTHistory?.controls(); }
 function updateCode() {}
 function refreshLabels() {
   const [w, h] = Scene.sizes[state.aspect];
   $('dimensions').textContent = `${w} × ${h}`;
+  $('workingFps').textContent=projectFps+' FPS';
+  $('previewFps').textContent=projectFps+' FPS';
   $('durationLabel').textContent = `${Number(state.duration.toFixed(3))} s`;
   $('colorValue').textContent = state.color.toUpperCase(); $('backgroundValue').textContent = state.background.toUpperCase();
   $('scrub').max = frameCount() - 1;
@@ -31,7 +33,9 @@ function resizeStage() {
   if(!area.clientWidth||$('previewPanel').hidden)return;
   const vw=area.clientWidth,vh=area.clientHeight;
   const previousX=(area.scrollLeft+vw/2)/(surface.offsetWidth||vw),previousY=(area.scrollTop+vh/2)/(surface.offsetHeight||vh);
-  if(fitView){zoomPercent=Math.max(10,Math.min(400,Math.floor(Math.min((vw-24)/w,(vh-24)/h)*100)));}
+  // Reservar el espacio de ambas barras a partir del tamaño exterior evita
+  // alternar dos porcentajes cuando una barra aparece o desaparece.
+  if(fitView){zoomPercent=Math.max(10,Math.min(400,Math.floor(Math.min((area.offsetWidth-40)/w,(area.offsetHeight-40)/h)*100)));}
   scale=zoomPercent/100;$('zoom').value=Math.min(200,zoomPercent);$('zoomNumber').value=zoomPercent;
   const sw=Math.max(vw,w*scale*3),sh=Math.max(vh,h*scale*3);
   Object.assign(surface.style,{width:sw+'px',height:sh+'px'});
@@ -65,7 +69,8 @@ function drawGuides() {
   $('clipWarning').textContent = rect.left < -.5 || rect.top < -.5 || rect.right > w + .5 || rect.bottom > h + .5 ? 'El contenido fuera del borde no se exporta.' : '';
 }
 function showFrame(frame) {
-  currentFrame = Math.max(0, Math.min(frameCount() - 1, Math.round(frame)));
+  const outputFrames=Math.max(1,Math.round(state.duration*projectFps)),outputFrame=Math.max(0,Math.min(outputFrames-1,Math.round(frame/60*projectFps)));
+  currentFrame = Math.max(0, Math.min(frameCount() - 1, Math.round(outputFrame*60/projectFps)));
   const mgtFrame=currentFrame-Math.round(mgStart*60);$('scene').hidden=!mainPresent||mgtFrame<0||mgtFrame>=Math.round(mgDuration*60)||window.MGTTrackState?.visible('mgt')===false;$('useText').hidden=!mainPresent;
   if (ready&&mainPresent) {
     if (custom) $('scene').contentWindow.postMessage({ mgt:customChannel, type:'frame', frame:Math.max(0,mgtFrame), stopId:selectedStop||null }, '*');
@@ -74,7 +79,7 @@ function showFrame(frame) {
   $('scrub').value = currentFrame;
   const ms = Math.round(currentFrame / 60 * 1000), seconds = Math.floor(ms / 1000);
   $('timecode').textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`;
-  $('frameLabel').textContent = `Fotograma ${currentFrame + 1} / ${frameCount()}`;
+  $('frameLabel').textContent = `Fotograma ${outputFrame + 1} / ${outputFrames}`;
   window.MGTAudio?.seek(currentFrame/60,playing);window.MGTEffectUI?.seek(currentFrame/60,playing);window.MGTTrackUI?.frame();
   drawGuides();
 }
@@ -185,48 +190,81 @@ $('actualZoom').onclick=()=>{fitView=false;zoomPercent=100;resizeStage();};
 $('refreshView').onclick=()=>{clearError();setTab(false);rebuild();tell('Vista reconstruida con los ajustes actuales.');};
 $('cropPreview').onchange = () => { pause(); drawGuides(); };
 function updateExportSize() { const [w,h]=MGTExport.dimensions(state.aspect,Number($('resolution').value));$('exportResolution').textContent=w+' × '+h; }
-function updateEstimate(){const manual=$('quality').value==='bitrate',quick=$('quality').value==='quick';$('bitrateControls').hidden=!manual;if(quick)$('resolution').value=540;$('resolution').disabled=quick||busy;const b=$('bitrate').valueAsNumber;$('estimatedSize').textContent=Number.isFinite(b)&&b>=1&&b<=200?'Peso estimado: ≈ '+(b*state.duration/8).toFixed(1)+' MB. El tamaño real puede variar.':'Introduce de 1 a 200 Mbps.';$('exportModeNote').textContent=quick?'Borrador a 540p · misma duración, encuadre y 60 FPS. Compresión predefinida.':'Configuración de exportación · se recuerda para la próxima sesión.';$('exportQualityLabel').textContent=(quick?'Borrador rápido':manual?'Bitrate objetivo':'Alta')+((window.MGTAudio?.id()||window.MGTEffectUI?.hasClips())?' / audio AAC':' / sin audio');updateExportSize();}
+function updateEstimate(){const mov=$('exportFormat').value==='mov',manual=!mov&&$('quality').value==='bitrate',quick=!mov&&$('quality').value==='quick';$('bitrateControls').hidden=!manual;$('quality').disabled=mov||busy;$('quickExport').disabled=mov||busy;$('resolution').disabled=busy;$('exportFormat').disabled=busy;$('exportAlpha').disabled=busy;const b=$('bitrate').valueAsNumber;$('estimatedSize').textContent=Number.isFinite(b)&&b>=1&&b<=200?'Peso estimado: ≈ '+(b*state.duration/8).toFixed(1)+' MB. El tamaño real puede variar.':'Introduce de 1 a 200 Mbps.';$('exportModeNote').textContent=mov?'MOV ProRes 4444 conserva el canal alfa cuando la casilla está activada.':quick?'Compresión rápida a la resolución del lienzo y '+projectFps+' FPS.':'Configuración de exportación · se recuerda para la próxima sesión.';$('exportQualityLabel').textContent=(mov?'ProRes 4444':quick?'Borrador rápido':manual?'Bitrate objetivo':'Alta')+((window.MGTAudio?.id()||window.MGTEffectUI?.hasClips())?' / audio AAC':' / sin audio');$('exportFpsLabel').textContent=projectFps+' FPS';$('exportFormatLabel').textContent=mov?'MOV / ProRes 4444':'MP4 / H.264';$('workingFormat').textContent=mov?'MOV':'MP4';$('exportExtension').textContent=mov?'.mov':'.mp4';$('beginExport').textContent=mov?'Generar MOV ↗':'Generar MP4 ↗';updateExportSize();}
 function rememberExport(){const raw={resolution:Number($('resolution').value),quality:$('quality').value,bitrate:$('bitrate').valueAsNumber};if(!Number.isFinite(raw.bitrate)||raw.bitrate<1||raw.bitrate>200)return;try{localStorage.setItem('mgt.export',JSON.stringify(MGTExport.normalize(raw)));}catch{tell('Ajustes aplicados; no se pudieron recordar en este navegador.',true);}}
 let exportPreferences=MGTExport.defaults;try{exportPreferences=MGTExport.normalize(JSON.parse(localStorage.getItem('mgt.export')||'{}'));}catch{}
 $('resolution').value=exportPreferences.resolution;$('quality').value=exportPreferences.quality;$('bitrate').value=exportPreferences.bitrate;
 $('quality').onchange=()=>{updateEstimate();rememberExport();};$('bitrate').oninput=()=>{updateEstimate();rememberExport();};
 $('resolution').onchange=()=>{updateExportSize();rememberExport();};
 $('quickExport').onclick=()=>{$('quality').value='quick';updateEstimate();rememberExport();};
+$('exportAlpha').onchange=()=>{if($('exportAlpha').checked)$('exportFormat').value='mov';updateEstimate();};
+$('exportFormat').onchange=()=>{if($('exportFormat').value==='mp4'&&$('exportAlpha').checked){if(!confirm('MP4 no conserva transparencias. ¿Cambiar a MP4 y quitar la transparencia?')){$('exportFormat').value='mov';return;}$('exportAlpha').checked=false;}updateEstimate();};
 updateEstimate();
 $('openExport').onclick = () => {
   if(window.MGTSubtitleUI?.hasPending()&&!confirm('Hay cambios de subtítulos pendientes. ¿Exportar la composición ya aplicada sin esos cambios?'))return;
   pause(); const [w, h] = Scene.sizes[state.aspect];
   updateExportSize();updateEstimate();$('quality').disabled=false;$('bitrate').disabled=false;$('quickExport').disabled=false;
-  $('exportDuration').textContent = `${Number(state.duration.toFixed(3))} s · ${frameCount()} fotogramas`;
+  $('exportDuration').textContent = `${Number(state.duration.toFixed(3))} s · ${Math.round(state.duration*projectFps)} fotogramas`;
   $('exportProgress').hidden = true; $('download').hidden = true; $('beginExport').hidden = false;
   $('beginExport').disabled = false; $('filename').disabled = false; $('cancelRender').hidden = true;
   $('exportDialog').showModal();
 };
 $('closeExport').onclick = () => { if (!busy) $('exportDialog').close(); };
+$('openExportFromInspector').onclick=()=>$('openExport').click();
 $('exportDialog').addEventListener('cancel', e => { if (busy) e.preventDefault(); });
 async function request(url, data) {
   const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Motion-Token': info.token }, body: JSON.stringify(data) });
   const result = await response.json(); if (!response.ok) throw new Error(result.error || 'No se pudo completar la solicitud.'); return result;
 }
-$('saveProject').onclick=async()=>{if(busy||!ready||MGTTrackUI.preparing()||MGTAudio.loading()||MGTEffectUI.loading())return;const button=$('saveProject');button.disabled=true;try{MGTHistory.flush();const filename=$('filename').value||'Proyecto MGT',result=await request('/api/project/save',{filename,snapshot:MGTHistory.capture(),settings:{resolution:Number($('resolution').value),quality:$('quality').value,bitrate:$('bitrate').valueAsNumber}});const link=document.createElement('a');link.href=result.url;link.download=result.filename+'.mgtproj';document.body.append(link);link.click();link.remove();tell('Proyecto completo guardado. Conserva el archivo .mgtproj como respaldo.');}catch(error){tell('No se pudo guardar el proyecto: '+error.message,true);}finally{button.disabled=false;}};
+$('saveProject').onclick=async()=>{
+ if(busy||!ready||MGTTrackUI.preparing()||MGTAudio.loading()||MGTEffectUI.loading())return;
+ const button=$('saveProject'),filename=($('filename').value||'Proyecto MGT').replace(/\.mgtproj$/i,'');let handle;
+ button.disabled=true;
+ try{
+  // El selector debe abrirse durante el gesto del usuario, antes de cualquier petición.
+  if(window.showSaveFilePicker){try{handle=await window.showSaveFilePicker({suggestedName:filename+'.mgtproj',types:[{description:'Proyecto MGT',accept:{'application/zip':['.mgtproj']}}],excludeAcceptAllOption:true});}catch(error){if(error.name==='AbortError')return;tell('No se pudo abrir el selector de archivos; se descargará el proyecto.');}}
+  MGTHistory.flush();
+  const result=await request('/api/project/save',{filename,snapshot:MGTHistory.capture(),settings:{resolution:Number($('resolution').value),quality:$('quality').value,bitrate:$('bitrate').valueAsNumber,fps:projectFps}});
+  if(handle){const response=await fetch(result.url);if(!response.ok)throw Error('No se pudo recuperar el proyecto.');const writable=await handle.createWritable();await response.body.pipeTo(writable);tell('Proyecto guardado como '+handle.name+'.');}
+  else{const link=document.createElement('a');link.href=result.url;link.download=result.filename+'.mgtproj';document.body.append(link);link.click();link.remove();tell('El navegador descargó '+link.download+' en su carpeta de descargas.');}
+ }catch(error){if(error.name!=='AbortError')tell('No se pudo guardar el proyecto: '+error.message,true);}finally{button.disabled=false;}
+};
 $('openProject').onclick=()=>{if(!busy)$('projectFile').click();};
-$('projectFile').onchange=async()=>{const file=$('projectFile').files[0];$('projectFile').value='';if(!file)return;if(!/\.mgtproj$/i.test(file.name)){tell('Selecciona un proyecto .mgtproj.',true);return;}if(hasUnsaved()&&!confirm('¿Abrir otro proyecto? Guarda antes el trabajo actual si quieres conservarlo.'))return;const button=$('openProject');button.disabled=true;let token=null;try{const response=await fetch('/api/project/open',{method:'POST',headers:{'Content-Type':'application/zip','X-Motion-Token':info.token},body:file});let result=await response.json();if(!response.ok)throw Error(result.error||'No se pudo abrir el proyecto.');token=result.relinkToken??null;if(token){const dialog=$('projectRelinkDialog'),input=$('projectRelinkFile');dialog.showModal();try{for(const missing of result.missing){$('projectRelinkName').textContent=missing.name;$('projectRelinkStatus').textContent='Selecciona el WAV para reenlazar este recurso.';input.value='';const replacement=await new Promise((resolve,reject)=>{const cancel=()=>{cleanup();reject(Error('Apertura cancelada.'));},choose=()=>{const chosen=input.files[0];if(!chosen)return;cleanup();resolve(chosen);},cleanup=()=>{input.removeEventListener('change',choose);$('projectRelinkCancel').removeEventListener('click',cancel);dialog.removeEventListener('cancel',cancel);};input.addEventListener('change',choose);$('projectRelinkCancel').addEventListener('click',cancel);dialog.addEventListener('cancel',cancel);});$('projectRelinkStatus').textContent='Comprobando WAV…';const relink=await fetch('/api/project/'+token+'/relink?id='+encodeURIComponent(missing.id),{method:'POST',headers:{'Content-Type':'audio/wav','X-Motion-Token':info.token},body:replacement});const data=await relink.json();if(!relink.ok)throw Error(data.error||'No se pudo reenlazar el WAV.');}const complete=await request('/api/project/'+token+'/complete',{});result=complete;token=null;}finally{dialog.close();}}await MGTHistory.apply(result.snapshot);$('resolution').value=String(result.settings.resolution);if(['auto','quick','bitrate'].includes(result.settings.quality))$('quality').value=result.settings.quality;if(Number.isFinite(result.settings.bitrate))$('bitrate').value=result.settings.bitrate;syncProjectInspector();updateEstimate();MGTHistory.initialize();tell('Proyecto abierto: '+file.name);}catch(error){if(token)await request('/api/project/'+token+'/cancel',{}).catch(()=>{});tell('No se pudo abrir el proyecto: '+error.message,true);}finally{button.disabled=false;}};
+$('projectFile').onchange=async()=>{
+ const file=$('projectFile').files[0];$('projectFile').value='';if(!file)return;
+ if(!/\.mgtproj$/i.test(file.name)){tell('Selecciona un proyecto .mgtproj.',true);return;}
+ if(hasUnsaved()&&!confirm('¿Abrir otro proyecto? Guarda antes el trabajo actual si quieres conservarlo.'))return;
+ const button=$('openProject');button.disabled=true;let token=null;
+ try{
+  const response=await fetch('/api/project/open',{method:'POST',headers:{'Content-Type':'application/zip','X-Motion-Token':info.token},body:file});
+  let result=await response.json();if(!response.ok)throw Error(result.error||'No se pudo abrir el proyecto.');token=result.relinkToken??null;
+  if(token){const dialog=$('projectRelinkDialog'),input=$('projectRelinkFile');dialog.showModal();
+   try{for(const missing of result.missing){const video=missing.kind==='video';$('projectRelinkName').textContent=missing.name;$('projectRelinkStatus').textContent=video?'Selecciona el MP4 preparado para reenlazar este vídeo.':'Selecciona el WAV para reenlazar este audio.';input.accept=video?'.mp4,video/mp4':'.wav,audio/wav';input.value='';
+    const replacement=await new Promise((resolve,reject)=>{const cancel=()=>{cleanup();reject(Error('Apertura cancelada.'));},choose=()=>{const chosen=input.files[0];if(!chosen)return;cleanup();resolve(chosen);},cleanup=()=>{input.removeEventListener('change',choose);$('projectRelinkCancel').removeEventListener('click',cancel);dialog.removeEventListener('cancel',cancel);};input.addEventListener('change',choose);$('projectRelinkCancel').addEventListener('click',cancel);dialog.addEventListener('cancel',cancel);});
+    $('projectRelinkStatus').textContent=video?'Comprobando MP4…':'Comprobando WAV…';const relink=await fetch('/api/project/'+token+'/relink?id='+encodeURIComponent(missing.id),{method:'POST',headers:{'Content-Type':video?'video/mp4':'audio/wav','X-Motion-Token':info.token},body:replacement});const data=await relink.json();if(!relink.ok)throw Error(data.error||'No se pudo reenlazar el recurso.');
+   }const complete=await request('/api/project/'+token+'/complete',{});result=complete;token=null;}finally{dialog.close();}
+  }
+  await MGTHistory.apply(result.snapshot);$('resolution').value=String(result.settings.resolution);projectFps=[15,24,30,60].includes(result.settings.fps)?result.settings.fps:60;
+  if(['auto','quick','bitrate'].includes(result.settings.quality))$('quality').value=result.settings.quality;if(Number.isFinite(result.settings.bitrate))$('bitrate').value=result.settings.bitrate;
+  syncProjectInspector();refreshLabels();updateEstimate();MGTHistory.initialize();tell('Proyecto abierto: '+file.name);
+ }catch(error){if(token)await request('/api/project/'+token+'/cancel',{}).catch(()=>{});tell('No se pudo abrir el proyecto: '+error.message,true);}finally{button.disabled=false;}
+};
 $('beginExport').onclick = async () => {
   if (busy || window.MGTAudio?.loading()) return;
-  const bitrate=$('quality').value==='bitrate'?$('bitrate').valueAsNumber:null;
+  const bitrate=$('exportFormat').value==='mp4'&&$('quality').value==='bitrate'?$('bitrate').valueAsNumber:null;
   if(bitrate!==null&&(!Number.isFinite(bitrate)||bitrate<1||bitrate>200)){ $('exportProgress').hidden=false;$('exportStatus').textContent='Introduce un bitrate de 1 a 200 Mbps.';return;}
   $('quality').disabled=true;$('bitrate').disabled=true;$('quickExport').disabled=true;rememberExport();
   busy = true; setButtons(); $('beginExport').disabled = true; $('filename').disabled = true; $('closeExport').disabled = true; $('resolution').disabled = true;
   $('exportProgress').hidden = false; $('progress').value = 0; $('exportStatus').textContent = 'Preparando la composición…'; $('cancelRender').hidden = false; $('cancelRender').disabled = false;
   renderId = null;
   try {
-  const result = await request('/api/export', { scene:structuredClone(state),filename:$('filename').value,resolution:Number($('resolution').value),composition:custom,params,seed,bitrate,audioId:window.MGTAudio?.id()||null,audioSettings:MGTAudio.settings(),effects:MGTEffectUI.snapshot(),layers:{...MGTTrackUI.capture(),overlayLanes:MGTTrackUI.exportOverlayLanes(),mainDuration:mgDuration,mainStart:mgStart,mainPresent,flags:MGTTrackState.capture()},quick:$('quality').value==='quick' }); renderId = result.id;
+  const format=$('exportFormat').value,result = await request('/api/export', { scene:structuredClone(state),filename:$('filename').value,resolution:Number($('resolution').value),fps:projectFps,format,alpha:$('exportAlpha').checked,composition:custom,params,seed,bitrate:format==='mov'?null:bitrate,audioId:window.MGTAudio?.id()||null,audioSettings:MGTAudio.settings(),effects:MGTEffectUI.snapshot(),layers:{...MGTTrackUI.capture(),overlayLanes:MGTTrackUI.exportOverlayLanes(),mainDuration:mgDuration,mainStart:mgStart,mainPresent,flags:MGTTrackState.capture()},quick:format==='mp4'&&$('quality').value==='quick' }); renderId = result.id;
     for (;;) {
       const response = await fetch('/api/jobs/' + renderId); if (!response.ok) throw new Error('No se pudo consultar la exportación.');
       const job = await response.json();
       $('progress').value = job.status === 'done' ? 100 : job.completed / job.frames * 98;
       if (job.status === 'done') {
-        $('exportStatus').textContent = 'Video listo. Pulsa Guardar MP4 para elegir dónde guardarlo.';
+        $('exportStatus').textContent = 'Video listo. Pulsa Guardar video para elegir dónde guardarlo.';
         $('download').href = '/api/jobs/' + renderId + '/download'; $('download').download = job.filename; $('download').hidden = false; $('beginExport').hidden = true; break;
       }
       if (['error', 'cancelled'].includes(job.status)) throw new Error(job.error);
@@ -362,7 +400,7 @@ $('newSeed').onclick=()=>{remember();seed=crypto.getRandomValues(new Uint32Array
 $('randomize').onclick=()=>{remember();params=Composition.randomized(custom,params,seed);pushParams();tell('Controles aleatorizados con la semilla '+seed+'.');};
 for(const el of document.querySelectorAll('#textControls input,#textControls textarea,#textControls select'))el.addEventListener('focus',()=>{if(!custom)remember();});
 $('openLibrary').onclick=()=>{$('libraryDialog').showModal();loadGallery();};$('closeLibrary').onclick=()=>{$('libraryDialog').close();};
-$('code').oninput = () => { draftDirty = true; $('codeState').textContent = 'Borrador editado · pulsa Aplicar código para usarlo'; };
+$('code').oninput = () => { draftDirty = true; $('codeState').textContent = 'Borrador editado · pulsa Agregar a pista para usarlo'; };
 $('codeFromText').onclick = () => {
   if (draftDirty && !confirm('¿Reemplazar el borrador por el código de la composición de texto?')) return;
   $('code').value = JSON.stringify(Composition.fromText({...state,duration:mgDuration}), null, 2); draftDirty = true;
@@ -375,12 +413,12 @@ $('codeFromCurrent').onclick=()=>{
   snapshot.parameters.forEach(p=>{p.default=params[p.id];});snapshot.recommended={duration:mgDuration,aspect:state.aspect,resolution:Number($('resolution').value)};
   $('code').value=JSON.stringify(snapshot,null,2);draftDirty=true;$('codeState').textContent='Valores y semilla capturados · listo para copiar';
 };
-$('codeFromGLB').onclick=()=>{if(draftDirty&&!confirm('¿Reemplazar el borrador por la plantilla GLB?'))return;$('code').value=JSON.stringify(MGTModelTemplate(),null,2);draftDirty=true;$('codeState').textContent='Modelo GLB · pulsa Aplicar código e importa el archivo desde Propiedades';clearError();};
-$('codeFrom3D').onclick=()=>{if(draftDirty&&!confirm('¿Reemplazar el borrador por la escena 3D inicial?'))return;$('code').value=JSON.stringify(MGTThreeTemplate(),null,2);draftDirty=true;$('codeState').textContent='Escena 3D · pulsa Aplicar código para usarla';clearError();};
-$('applyCode').onclick=()=>applyCode(false);
-function openOverlayCode(raw){$('overlayCode').value=raw??$('code').value;$('overlayCodeDuration').value=String(Math.min(3600,Math.max(.016667,Number(custom?.recommended?.duration??mgDuration)||3)));$('overlayCodeStatus').textContent='';$('overlayCodeDialog').showModal();}
-$('addOverlayCode').onclick=()=>openOverlayCode();$('closeOverlayCode').onclick=()=>$('overlayCodeDialog').close();$('cancelOverlayCode').onclick=()=>$('overlayCodeDialog').close();
-$('confirmOverlayCode').onclick=async()=>{const status=$('overlayCodeStatus');status.textContent='Validando y colocando…';try{const ok=await window.MGTTrackUIAddCode($('overlayCode').value,$('overlayCodeDuration').valueAsNumber);if(ok!==false){$('overlayCodeDialog').close();setTab(false);tell('Clip visual agregado desde código.');}}catch(e){status.textContent=e.message;status.classList.add('error');}};
+$('codeFromGLB').onclick=()=>{if(draftDirty&&!confirm('¿Reemplazar el borrador por la plantilla GLB?'))return;$('code').value=JSON.stringify(MGTModelTemplate(),null,2);draftDirty=true;$('codeState').textContent='Modelo GLB · pulsa Agregar a pista e importa el archivo desde Propiedades';clearError();};
+$('codeFrom3D').onclick=()=>{if(draftDirty&&!confirm('¿Reemplazar el borrador por la escena 3D inicial?'))return;$('code').value=JSON.stringify(MGTThreeTemplate(),null,2);draftDirty=true;$('codeState').textContent='Escena 3D · pulsa Agregar a pista para usarla';clearError();};
+$('applyCode').onclick=()=>applyCode();
+function openOverlayCode(raw){$('overlayCode').value=raw??$('code').value;$('overlayCodeStatus').textContent='';$('overlayCodeDialog').showModal();}
+$('closeOverlayCode').onclick=()=>$('overlayCodeDialog').close();$('cancelOverlayCode').onclick=()=>$('overlayCodeDialog').close();
+$('confirmOverlayCode').onclick=async()=>{const status=$('overlayCodeStatus');status.textContent='Validando y colocando…';try{const ok=await window.MGTTrackUIAddCode($('overlayCode').value);if(ok!==false){$('overlayCodeDialog').close();setTab(false);tell('MGT agregado a la pista visual.');}}catch(e){status.textContent=e.message;status.classList.add('error');}};
 // Both toolbar and context menu use the same lane-aware actions.
 (()=>{const panel=$('tracksPanel'),heading=panel?.querySelector('.tracks-heading');if(!panel||!heading)return;
  const actions={visual:()=>window.MGTTrackUI?.addLane(),audio:()=>window.MGTEffectUI?.addLane(),image:()=>document.querySelector('.visual-image-button')?.click(),video:()=>$('baseVideoFile').click(),sound:()=>$('effectFile').click(),code:()=>openOverlayCode(),json:()=>$('overlayFile').click()};
@@ -389,13 +427,14 @@ $('confirmOverlayCode').onclick=async()=>{const status=$('overlayCodeStatus');st
  const menu=(buttonId,menuId,label)=>{const button=document.createElement('button');button.id=buttonId;button.type='button';button.className='secondary';button.textContent='+ '+label;button.setAttribute('aria-expanded','false');const popup=document.createElement('div');popup.id=menuId;popup.className='track-picker';popup.hidden=true;heading.append(button,popup);button.onclick=()=>{for(const other of heading.querySelectorAll('.track-picker'))if(other!==popup)other.hidden=true;popup.hidden=!popup.hidden;popup.style.left=button.offsetLeft+'px';button.setAttribute('aria-expanded',String(!popup.hidden));};return {button,popup};};
  const track=menu('addTrack','trackPicker','Agregar pista');
  [['visual','Pista visual'],['audio','Pista de audio']].forEach(([id,label])=>{const b=document.createElement('button');b.type='button';b.dataset.addTrack=id;b.textContent=label;b.onclick=()=>{track.popup.hidden=true;track.button.setAttribute('aria-expanded','false');invoke(id);};track.popup.append(b);});
- const media=menu('addMedia','mediaPicker','Agregar medio');const choices=[['image','Imagen'],['video','Vídeo'],['sound','Audio'],['mgt','MGT ▸'],['code','MGT · Desde código'],['json','MGT · Desde JSON']];
- for(const [id,label] of choices){const b=document.createElement('button');b.type='button';b.dataset.addMedia=id;b.textContent=label;if(id==='code'||id==='json')b.className='mgt-subchoice';if(id==='mgt'){b.setAttribute('aria-expanded','false');b.onclick=()=>{const open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));media.popup.classList.toggle('show-mgt',open);};}else b.onclick=()=>{media.popup.hidden=true;media.button.setAttribute('aria-expanded','false');invoke(id);};media.popup.append(b);}
+ const media=menu('addMedia','mediaPicker','Agregar medio');const addChoice=(parent,id,label)=>{const b=document.createElement('button');b.type='button';b.dataset.addMedia=id;b.textContent=label;b.onclick=()=>{media.popup.hidden=true;media.button.setAttribute('aria-expanded','false');invoke(id);};parent.append(b);return b;};
+ addChoice(media.popup,'image','Imagen');addChoice(media.popup,'video','Vídeo');addChoice(media.popup,'sound','Audio');const mgtGroup=document.createElement('div');mgtGroup.className='context-submenu';const mgtTrigger=document.createElement('button');mgtTrigger.type='button';mgtTrigger.textContent='MGT  ›';mgtTrigger.setAttribute('aria-haspopup','menu');mgtTrigger.onclick=()=>mgtGroup.classList.toggle('open');mgtTrigger.onmouseenter=()=>mgtGroup.classList.add('open');const mgtChoices=document.createElement('div');mgtChoices.className='context-submenu-popup';addChoice(mgtChoices,'json','Desde JSON');addChoice(mgtChoices,'code','Desde código');mgtGroup.append(mgtTrigger,mgtChoices);media.popup.append(mgtGroup);
+ media.button.addEventListener('click',()=>{const audio=window.MGTTrackEdit?.selected()?.track==='effects';for(const b of media.popup.querySelectorAll('[data-add-media]'))b.hidden=audio?b.dataset.addMedia!=='sound':b.dataset.addMedia==='sound';mgtGroup.hidden=audio;});
  document.addEventListener('click',e=>{for(const {button,popup} of [track,media])if(!popup.contains(e.target)&&e.target!==button){popup.hidden=true;button.setAttribute('aria-expanded','false');}});
  document.addEventListener('keydown',e=>{if(e.key!=='Delete'||e.target.closest('input,textarea,select,[contenteditable=true]')||document.querySelector('dialog[open]'))return;const pick=window.MGTTrackUI?.selected();if(pick&&!window.MGTTrackState?.locked(pick)){e.preventDefault();window.MGTTrackUI.remove(pick);tell('Clip visual eliminado.');}});
  const inspector=$('overlayInspector');if(inspector&&!$('overlayMiniPreview')){const box=document.createElement('div');box.id='overlayMiniPreview';box.className='overlay-mini-preview';box.innerHTML='<span>Vista previa del clip</span>';inspector.querySelector('#overlayName')?.after(box);const name=$('overlayName');new MutationObserver(()=>{const id=window.MGTTrackUI?.selected?.(),c=window.MGTTrackUI?.snapshot?.().find(x=>x.id===id);if(!c){box.querySelector('iframe')?.remove();return;}const old=box.querySelector('iframe');old?.remove();const iframe=document.createElement('iframe');iframe.setAttribute('sandbox','allow-scripts');iframe.srcdoc=Composition.documentHTML(c.document,{width:320,height:180,duration:c.sourceFrames/60,background:'transparent',workspace:true,overlay:true,params:c.params,seed:c.seed});iframe.onload=()=>iframe.contentWindow.postMessage({type:'frame',frame:c.inFrame+Math.max(0,currentFrame-c.start)},'*');box.append(iframe);}).observe(name,{childList:true,characterData:true,subtree:true});}
 })();
-function applyCode(){if(window.MGTTrackState?.locked('mgt')||busy||imageImporting||pendingApply){showError('Espera a que termine la operación actual o desbloquea la pista MGT.');return;}try{const raw=JSON.parse($('code').value),parsed=Composition.parse(raw);new Function('ctx',parsed.render);if(parsed.subtitles?.kind==='template')throw Error('Carga esta plantilla desde la pestaña Subtítulos.');window.MGTMGTModel.add(parsed,parsed.recommended?.duration??Math.min(3,state.duration));draftDirty=false;clearError();$('codeState').textContent='MGT agregado a la línea de tiempo.';tell('MGT agregado como clip independiente.');}catch(e){showError(e.message);}}
+async function applyCode(){if(window.MGTTrackState?.locked(window.MGTTrackUI?.selectedLane())||busy||imageImporting||pendingApply){showError('Espera a que termine la operación actual o desbloquea la pista visual.');return;}try{await window.MGTTrackUIAddCode($('code').value);draftDirty=false;clearError();$('codeState').textContent='MGT agregado a la pista visual.';tell('MGT agregado a la pista visual.');setTab(false);}catch(e){showError(e.message);}}
 $('useText').onclick=()=>{if(!mainPresent||window.MGTTrackState?.locked('mgt'))return;window.MGTHistory?.flush();mainPresent=false;pause();showFrame(currentFrame);window.MGTTrackUI?.sync();window.MGTHistory?.schedule();tell('MGT eliminado. La pista quedó vacía.');};
 let starting=false,startupComplete=false;
 async function init(){
@@ -409,7 +448,7 @@ async function init(){
   $('font').replaceChildren(...info.fonts.map(name=>new Option(name,name)));
   document.querySelector('.brand small').textContent='ESTUDIO LOCAL · '+info.version;
   $('tracksPanel').setAttribute('aria-label','Pistas visuales y de audio');$('tracksStatus').textContent='Arrastra medios a pistas visuales o de audio.';$('codeState').textContent='Código y parámetros · composición MGT para agregar como medio visual';
-  $('overlaysNotice').textContent=info.version+' · pistas visuales y de audio con clips superpuestos. Guarda el proyecto completo como .mgtproj.';
+  $('overlaysNotice').textContent=info.version+' · los clips se detienen al tocar otro medio de su pista. Guarda el proyecto completo como .mgtproj.';
   $('settingsDialog').querySelectorAll('section h3')[1].textContent='MGT '+info.version;
   $('welcomeDialog').querySelector('.dialog-intro').textContent='MGT '+info.version+' · animaciones con código generado por IA.';
   if(!info.fonts.includes(state.font))state.font=info.fonts[0];$('font').value=state.font;$('font').disabled=false;
@@ -523,9 +562,10 @@ for(const id of ['theme','accent','uiSize']){$(id).value=preferences[id];if(!$(i
 applyPreferences(false);
 $('openSettings').onclick=()=>{$('settingsDialog').showModal();refreshStorage();};$('closeSettings').onclick=()=>$('settingsDialog').close();
 $('resetSettings').onclick=()=>{for(const id of ['theme','accent','uiSize'])$(id).value=preferenceDefaults[id];applyPreferences();};
-function syncProjectInspector(){$('projectDuration').value=Number(state.duration.toFixed(3));$('projectAspect').value=state.aspect;$('projectBackground').value=state.background;$('projectCanvasSize').textContent=MGTExport.dimensions(state.aspect,Number($('resolution').value)).join(' × ')+' px';}
+function syncProjectInspector(){$('projectDuration').value=Number(state.duration.toFixed(3));$('projectAspect').value=state.aspect;$('projectFps').value=String(projectFps);$('projectBackground').value=state.background;$('projectCanvasSize').textContent=MGTExport.dimensions(state.aspect,Number($('resolution').value)).join(' × ')+' px';}
 $('projectDuration').onchange=()=>{try{const duration=$('projectDuration').valueAsNumber;if(!Number.isFinite(duration)||duration<.1||duration>3600)throw Error('La duración debe estar entre 0,1 y 3600 segundos.');state=Scene.normalize({...state,duration});currentFrame=Math.min(currentFrame,frameCount()-1);refreshLabels();rebuild();window.MGTHistory?.schedule();}catch(e){tell(e.message,true);}syncProjectInspector();};
 $('projectAspect').onchange=()=>{state=Scene.normalize({...state,aspect:$('projectAspect').value});refreshLabels();rebuild();window.MGTHistory?.schedule();syncProjectInspector();};
+$('projectFps').onchange=()=>{const next=Number($('projectFps').value);if(![15,24,30,60].includes(next))return;window.MGTHistory?.flush();projectFps=next;showFrame(currentFrame);refreshLabels();updateEstimate();window.MGTHistory?.schedule();tell('Proyecto configurado a '+next+' FPS. Los clips conservan su duración y velocidad.');};
 $('projectBackground').oninput=()=>{state=Scene.normalize({...state,background:$('projectBackground').value});$('stageBox').style.background=state.background;refreshLabels();showFrame(currentFrame);window.MGTHistory?.schedule();syncProjectInspector();};
 const canvasDialog=document.createElement('dialog');canvasDialog.id='canvasDialog';canvasDialog.innerHTML='<div class="dialog-heading"><h2>Configurar lienzo</h2><button id="closeCanvas" class="secondary" type="button">Cerrar</button></div><p>Proporción, duración y fondo se editan en Ajustes generales.</p><label for="canvasResolution">Resolución de salida</label><select id="canvasResolution"></select><p id="projectCanvasSize" class="hint"></p>';document.body.append(canvasDialog);$('canvasResolution').replaceChildren(...[...$('resolution').options].map(o=>new Option(o.textContent,o.value)));$('openCanvas').onclick=()=>{$('canvasResolution').value=$('resolution').value;syncProjectInspector();canvasDialog.showModal();};$('closeCanvas').onclick=()=>canvasDialog.close();$('canvasResolution').onchange=()=>{$('resolution').value=$('canvasResolution').value;updateEstimate();syncProjectInspector();window.MGTHistory?.schedule();};syncProjectInspector();
 
@@ -584,7 +624,7 @@ $('dismissStorageNotice').onclick=()=>$('storageNotice').hidden=true;
 $('manageStorage').onclick=()=>{$('settingsDialog').showModal();refreshStorage();};
 $('copyDiagnostics').onclick=async()=>{
  const location=$('codeError').textContent.match(/(?:render|JSON) · línea \d+, columna \d+/)?.[0];
- const diagnostic=['MGT '+(info?.version||'desconocida'),'Plataforma: Windows x64','FPS de exportación: 60','Vista: '+($('codePanel').hidden?'Escenario':'Código'),'Estado: '+(busy?'Exportación activa':pendingApply?'Aplicando composición':ready?'Vista preparada':'Vista no preparada'),'Panel de errores: '+($('errorPanel').hidden?'sin error visible':'error visible; copiar por separado si deseas compartirlo'),...(location?['Ubicación: '+location]:[])].join('\n');
+ const diagnostic=['MGT '+(info?.version||'desconocida'),'Plataforma: Windows x64','FPS de exportación: '+projectFps,'Vista: '+($('codePanel').hidden?'Escenario':'Código'),'Estado: '+(busy?'Exportación activa':pendingApply?'Aplicando composición':ready?'Vista preparada':'Vista no preparada'),'Panel de errores: '+($('errorPanel').hidden?'sin error visible':'error visible; copiar por separado si deseas compartirlo'),...(location?['Ubicación: '+location]:[])].join('\n');
  try{await copyText(diagnostic);$('diagnosticStatus').textContent='Diagnóstico copiado: no incluye tu código, texto, nombres de archivos ni rutas personales. Puedes adjuntarlo al reportar un error.';}catch{$('diagnosticStatus').textContent='No se pudo copiar el diagnóstico.';}
 };
 

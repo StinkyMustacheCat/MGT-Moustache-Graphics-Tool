@@ -1,7 +1,7 @@
 # Construcción y desarrollo
 
 ## Requisitos
-Windows x64. Node.js 24 (la distribución de prueba usa 24.21.0), Playwright Core 1.62.1, Chromium 151.0.7922.173 (paquete comunitario ungoogled-chromium probado con Playwright) y FFmpeg 9.0.1 con libx264, dav1d y zlib. El portable MGT 1.5.2 incluye una compilación estática propia de FFmpeg; ya no usa el binario Essentials de Gyan. COMPONENTES.json fija versiones, commits, archivos fuente y hashes.
+Windows x64. Node.js 24 (la distribución de prueba usa 24.21.0), Playwright Core 1.62.1, Chromium 151.0.7922.173 (paquete comunitario ungoogled-chromium probado con Playwright) y FFmpeg 9.0.1 con libx264, dav1d y zlib. Los paquetes MGT 1.6.4 incluyen una compilación estática propia de FFmpeg; ya no usan el binario Essentials de Gyan. COMPONENTES.json fija versiones, commits, archivos fuente y hashes.
 
 No se compila el frontend: HTML/CSS/JS se sirven directamente. No es una aplicación Electron.
 
@@ -24,10 +24,10 @@ node --test tests/*.test.cjs
 Las pruebas de almacenamiento usan una carpeta temporal propia y no tocan la galería del programa. PRUEBAS.md documenta las pruebas de navegador realizadas durante el desarrollo y sus límites.
 
 ## Empaquetar
-Para construir el portable de MGT 1.5.2, primero compila el lanzador con `./scripts/build-launcher.ps1`. Después ejecuta `node scripts/stage-098.cjs RUTA_DE_SALIDA_NUEVA RUTA_DEL_RUNTIME_EXISTENTE` y `node scripts/smoke-portable.cjs RUTA_DE_SALIDA_NUEVA`; finalmente comprime la carpeta y calcula SHA-256. El runtime debe incluir Node, Chromium, Playwright y FFmpeg con la estructura descrita arriba. El empaquetador usa únicamente ejemplos iniciales para `galeria` y deja `subtitulos` vacío; no migra datos personales.
+La release 1.6.4 distribuye el editor y el motor como ZIP separados. Cada paquete incluye sus runtimes necesarios, avisos, un manifiesto SHA-256 interno y un checksum externo generado después de crear el ZIP. El repositorio contiene código y las herramientas de construcción, no los runtimes redistribuidos; cualquier reconstrucción debe usar las versiones y los archivos fuente fijados en COMPONENTES.json y conservar los avisos aplicables. No incluir configuración local, perfiles ni datos de usuario.
 
 ## Datos locales
-El servidor escucha solo en loopback. El puerto base es 43871, con 20 alternativas. Perfil/logs/exports están en %LOCALAPPDATA%\MGT\<id de ubicación>; la galería está junto al programa. MGT_DATA_ROOT permite usar una carpeta de datos de prueba; no incluirla en una release. Las imágenes requieren version:3. Siguen admitidas las composiciones v1 y v2; la versión actual del programa es 1.5.2
+El servidor escucha solo en loopback. El puerto base es 43871, con 20 alternativas. Perfil/logs/exports están en %LOCALAPPDATA%\MGT\<id de ubicación>; la galería está junto al programa. MGT_DATA_ROOT permite usar una carpeta de datos de prueba; no incluirla en una release. Las imágenes requieren version:3. Siguen admitidas las composiciones v1 y v2; la versión actual del programa es 1.6.4.
 
 La biblioteca de subtítulos usa subtitulos/ junto al programa y se inicializa una vez desde examples/subtitulos/. El empaquetador no copia la biblioteca personal: solo las plantillas iniciales. Los datos del formato WMGT se validan tanto en el navegador como en el servidor.
 

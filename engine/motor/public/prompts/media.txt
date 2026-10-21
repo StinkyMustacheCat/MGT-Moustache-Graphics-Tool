@@ -1,0 +1,30 @@
+MGT 1.0.0 · PROMPT ESPECIALIZADO · VÍDEO Y RECURSOS ANIMADOS
+
+Genera una composición MGT v4 para un recurso visual animado importado por el usuario: MP4 H.264, GIF o SVG animado. El recurso debe vivir dentro del JSON y su reloj lo controla MGT; no inventes base64, rutas, URLs ni APIs de reproducción.
+
+ENTREGA
+Devuelve un único JSON completo, válido y autocontenido, listo para «Código > Aplicar código». Sin Markdown, comentarios, comas finales, imports, dependencias ni fragmentos pendientes. Incluye `version:4`, `name`, `parameters`, `html`, `css`, `render` y el mapa de recurso que corresponda: `videos`, `gifs` o `animatedSVGs`, inicialmente `{}` si el usuario aún no ha proporcionado el archivo. `render` es el cuerpo síncrono de una función que recibe `ctx`; no uses async. Indica qué archivo debe importar en Propiedades y la duración/proporción recomendadas.
+
+MP4
+Declara un parámetro `type:"video"` con default `""` y un `<canvas data-mgt-video="videoFile"></canvas>`, o usa `ctx.video(ctx.params.videoFile)` para obtener null o `{width,height,duration,element}`. El archivo debe ser MP4 H.264/AVC de 8 bits, autocontenido, una pista visual, hasta 10 MB, 120 s, 1920 px por lado, 1920×1080 y 60 FPS; no uses HEVC, WebM, cifrado, fragmentado ni medios externos. El audio del recurso se ignora.
+
+GIF
+Declara `type:"gif"`, `gifs:{}` y `<canvas data-mgt-gif="gifFile"></canvas>`, o `ctx.gif(ctx.params.gifFile)`. El archivo GIF87a/89a puede tener transparencia; hasta 10 MB, 2048 px por lado, 4 MP, 300 fotogramas, 120 s por ciclo y 32 millones de píxeles decodificados por composición. MGT reconstruye parches al avanzar o retroceder y controla el tiempo.
+
+SVG ANIMADO
+Declara `type:"svgAnimation"`, `animatedSVGs:{}` y `<canvas data-mgt-svg="svgFile"></canvas>`, o `ctx.svgAnimation(ctx.params.svgFile)`. El SVG autocontenido es de hasta 1 MB, 2048 px por lado, 4 MP, 2 recursos por composición, 64 animaciones, 32 valores por animación y 120 s. Solo usa `animate` y `animateTransform` para translate/scale/rotate, valores numéricos o `#RRGGBB`, `linear|discrete`, `freeze|remove` y sin CSS animado, scripts, imágenes, eventos, enlaces externos o animateMotion.
+
+FINAL DEL RECURSO
+Puedes declarar un select con opciones exactas `hold`, `loop`, `hide` y conectar `playback`, por ejemplo `playback:{videoFile:{end:{param:"videoEnd"}}}`. También se admite `end:"hold"`, `"loop"` o `"hide"`. El modo actúa solo sobre el recurso; no cambia la duración del clip ni del proyecto. El recurso comienza en el tiempo local 0, conserva el último fotograma con hold, repite con loop u oculta el recurso con hide.
+
+RENDER Y TIEMPO
+El render recibe `root`, `params`, `width`, `height`, `frame`, `fps`, `time`, `duration`, `progress`, `seed`, `random(index)`, `editingStop`, `image`, `video`, `gif`, `svgAnimation` y `subtitles`. `render` debe seguir siendo síncrono. Con vídeo/GIF/SVG, MGT puede hacer `window.setFrame` asíncrono antes de llamar a render; no devuelvas promesas. A 60 FPS, `N=Math.round(duration*60)`, `time=frame/60` y `progress=frame/Math.max(1,N-1)`. No uses video.play(), relojes, temporizadores, CSS autónomo, Math.random, red ni estado acumulado.
+
+LAYOUT Y PISTAS
+Posiciona el canvas como hijo de root con CSS y dimensiones de ctx; no cambies root ni uses window.innerWidth/Height. Declara controles para posición, tamaño, giro, opacidad, ajuste y visibilidad. Un MP4/GIF/SVG es un recurso visual dentro de una composición; la pista Vídeo base MP4 es otra función y no se declara en este JSON. No añadas audio, SFX, base video, subtítulos ni una estructura de proyecto/playlist. Un Overlay se carga como JSON independiente.
+
+VALIDACIÓN FINAL
+Comprueba que el tipo de parámetro, el atributo data-mgt y el mapa de recurso usan el mismo id, que `playback` solo referencia recursos animados y selects válidos, que no hay datos base64 inventados y que el primer frame, el final del recurso, hold/loop/hide y los saltos hacia atrás son deterministas. Entrega al final esta solicitud:
+
+SOLICITUD DEL USUARIO
+[Describe archivo, tipo de recurso, posición, escala, recorte, opacidad, giro, regla final, duración del clip, proporción y controles deseados.]

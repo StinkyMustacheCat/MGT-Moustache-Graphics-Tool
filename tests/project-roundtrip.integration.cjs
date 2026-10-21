@@ -29,6 +29,7 @@ async function stop(){
 }
 async function openPage(errors){
  const page=await browser.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('dialog',dialog=>dialog.accept());
+ await page.addInitScript(()=>Object.defineProperty(window,'showSaveFilePicker',{value:undefined,configurable:true}));
  await page.goto(url);await page.waitForFunction(()=>initialized&&ready);
  if(await page.locator('#welcomeDialog').isVisible())await page.click('#startWelcome');
  return page;
@@ -46,14 +47,15 @@ async function openPage(errors){
  await page.evaluate(input=>MGTTrackUIAddCode({...input,name:'Second'},1,0),doc);
  await page.click('#addTrack');await page.click('#trackPicker [data-add-track=audio]');await page.setInputFiles('#audioFile',wav);
  await page.waitForFunction(()=>MGTEffectUI.snapshot().length===1&&!MGTEffectUI.loading());
- const before=await page.evaluate(()=>({lanes:MGTTrackUI.capture().overlayLanes.map(l=>l.clips.length),audio:MGTEffectUI.snapshot()[0].audio.name,audioTracks:MGTEffectUI.captureTracks(),scene:state}));
+ await page.evaluate(()=>MGTTrackUI.select(null));await page.selectOption('#projectFps','24');
+ const before=await page.evaluate(()=>({lanes:MGTTrackUI.capture().overlayLanes.map(l=>l.clips.length),audio:MGTEffectUI.snapshot()[0].audio.name,audioTracks:MGTEffectUI.captureTracks(),scene:state,fps:projectFps}));
  assert.deepEqual(before.lanes,[1,1]);assert.equal(before.audioTracks.length,2);
  const downloadReady=page.waitForEvent('download',{timeout:30000});await page.click('#saveProject');const download=await downloadReady;await download.saveAs(zip);assert(fs.statSync(zip).size>1000);
  await page.close();await stop();await start();page=await openPage(errors);
  await page.setInputFiles('#projectFile',zip);
  await page.waitForFunction(()=>MGTTrackUI.snapshot().length===2&&MGTEffectUI.snapshot().length===1&&!MGTHistory.status().applying,{timeout:45000});
- const after=await page.evaluate(()=>({lanes:MGTTrackUI.capture().overlayLanes.map(l=>l.clips.length),audio:MGTEffectUI.snapshot()[0].audio.name,audioTracks:MGTEffectUI.captureTracks(),scene:state,ready:!MGTTrackUI.preparing()}));
- assert.deepEqual(after.lanes,before.lanes);assert.equal(after.audio,before.audio);assert.deepEqual(after.audioTracks,before.audioTracks);assert.deepEqual(after.scene,before.scene);assert(after.ready);assert.deepEqual(errors,[]);
+ const after=await page.evaluate(()=>({lanes:MGTTrackUI.capture().overlayLanes.map(l=>l.clips.length),audio:MGTEffectUI.snapshot()[0].audio.name,audioTracks:MGTEffectUI.captureTracks(),scene:state,fps:projectFps,ready:!MGTTrackUI.preparing()}));
+ assert.deepEqual(after.lanes,before.lanes);assert.equal(after.audio,before.audio);assert.deepEqual(after.audioTracks,before.audioTracks);assert.deepEqual(after.scene,before.scene);assert.equal(after.fps,before.fps);assert(after.ready);assert.deepEqual(errors,[]);
  console.log('Project ZIP reopens visual and audio lanes, including the empty-lane structure.');
  const archive=require(path.join(root,'project-archive.cjs')),entries=await archive.inspect(zip),project=await archive.readJSON(zip,entries.get('project.json')),broken=path.join(temp,'missing.mgtproj');
  await archive.create(broken,[{name:'project.json',data:JSON.stringify(project)}]);await page.setInputFiles('#projectFile',broken);
@@ -61,4 +63,10 @@ async function openPage(errors){
  await page.setInputFiles('#projectRelinkFile',wav);
  await page.waitForFunction(()=>!$('projectRelinkDialog').open&&MGTTrackUI.snapshot().length===2&&MGTEffectUI.snapshot().length===1,{timeout:45000});
  assert.deepEqual(errors,[]);console.log('Missing audio is relinked without losing the two-track timeline.');
+ const pickerPage=await browser.newPage();pickerPage.on('pageerror',error=>errors.push(error.message));
+ await pickerPage.addInitScript(()=>{window.__saved=[];window.__picked=null;window.showSaveFilePicker=async options=>{window.__picked=options.suggestedName;return {name:options.suggestedName,createWritable:async()=>new WritableStream({write(chunk){window.__saved.push(...new Uint8Array(chunk));}})};};});
+ await pickerPage.goto(url);await pickerPage.waitForFunction(()=>initialized&&ready);if(await pickerPage.locator('#welcomeDialog').isVisible())await pickerPage.click('#startWelcome');
+ await pickerPage.click('#saveProject');await pickerPage.waitForFunction(()=>window.__saved.length>1000,{timeout:30000});
+ const chosen=await pickerPage.evaluate(()=>({name:window.__picked,signature:window.__saved.slice(0,4)}));assert(chosen.name.endsWith('.mgtproj'));assert.deepEqual(chosen.signature,[80,75,3,4]);assert.deepEqual(errors,[]);console.log('Native save picker writes a valid project ZIP.');
+ await pickerPage.close();
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();await stop();});

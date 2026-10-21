@@ -1,11 +1,10 @@
 {
   "name": "moustache-graphics-tool",
-  "version": "1.5.2",
+  "version": "1.6.4",
   "private": true,
-  "description": "Moustache Graphics Tool: editor local y contrato de assets alfa para integración",
+  "description": "Moustache Graphics Tool: editor local y motor autónomo con API de assets",
   "scripts": {
     "start": "node server.cjs"
   },
   "license": "GPL-3.0-or-later"
 }
-

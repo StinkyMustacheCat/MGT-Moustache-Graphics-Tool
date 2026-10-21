@@ -1,0 +1,489 @@
+{
+  "version": 4,
+  "name": "GLB · animación incluida",
+  "parameters": [
+    {
+      "id": "cameraX",
+      "label": "Cámara · posición X",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraY",
+      "label": "Cámara · posición Y",
+      "type": "number",
+      "default": 0,
+      "min": -2000,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraDistance",
+      "label": "Cámara · distancia",
+      "type": "number",
+      "default": 1600,
+      "min": 500,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraYaw",
+      "label": "Cámara · giro horizontal (°)",
+      "type": "number",
+      "default": 0,
+      "min": -90,
+      "max": 90,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraPitch",
+      "label": "Cámara · inclinación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -60,
+      "max": 60,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraRoll",
+      "label": "Cámara · rotación (°)",
+      "type": "number",
+      "default": 0,
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "cameraFov",
+      "label": "Cámara · campo de visión (°)",
+      "type": "number",
+      "default": 45,
+      "min": 15,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionX",
+      "label": "Modelo · position X",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionY",
+      "label": "Modelo · position Y",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelPositionZ",
+      "label": "Modelo · position Z",
+      "type": "number",
+      "default": 0,
+      "min": -1500,
+      "max": 1500,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationX",
+      "label": "Modelo · rotation X",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationY",
+      "label": "Modelo · rotation Y",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelRotationZ",
+      "label": "Modelo · rotation Z",
+      "type": "number",
+      "default": 0,
+      "min": -360,
+      "max": 360,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleX",
+      "label": "Modelo · scale X",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleY",
+      "label": "Modelo · scale Y",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelScaleZ",
+      "label": "Modelo · scale Z",
+      "type": "number",
+      "default": 1,
+      "min": 0.1,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "modelSize",
+      "label": "Modelo · tamaño inicial",
+      "type": "number",
+      "default": 500,
+      "min": 50,
+      "max": 2000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "modelVisible",
+      "label": "Modelo · visible",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "modelFile",
+      "label": "Modelo · archivo GLB",
+      "type": "model",
+      "default": "cube"
+    },
+    {
+      "id": "lightAmbient",
+      "label": "Luz · ambiente",
+      "type": "number",
+      "default": 2,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "lightKey",
+      "label": "Luz · principal",
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "lightEnvironment",
+      "label": "Luz · entorno",
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "lightColor",
+      "label": "Luz · color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "id": "lightX",
+      "label": "Luz · X",
+      "type": "number",
+      "default": 800,
+      "min": -5000,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "lightY",
+      "label": "Luz · Y",
+      "type": "number",
+      "default": -1400,
+      "min": -5000,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "lightZ",
+      "label": "Luz · Z",
+      "type": "number",
+      "default": 2000,
+      "min": -5000,
+      "max": 5000,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "text3d",
+      "label": "Texto extruido",
+      "type": "text",
+      "default": "MGT 3D"
+    },
+    {
+      "id": "textDepth",
+      "label": "Texto · profundidad",
+      "type": "number",
+      "default": 40,
+      "min": 1,
+      "max": 200,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "textSize",
+      "label": "Texto · tamaño",
+      "type": "number",
+      "default": 100,
+      "min": 12,
+      "max": 400,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "textColor",
+      "label": "Texto · color",
+      "type": "color",
+      "default": "#a98aff"
+    },
+    {
+      "id": "textVisible",
+      "label": "Texto · mostrar",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "glbClip",
+      "label": "GLB · índice de animación",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 31,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "glbSpeed",
+      "label": "GLB · velocidad",
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "max": 4,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "glbStart",
+      "label": "GLB · inicio",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 30,
+      "step": 0.1,
+      "control": "slider"
+    },
+    {
+      "id": "glbLoop",
+      "label": "GLB · repetir",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "glbEnabled",
+      "label": "GLB · animar",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "html": "",
+  "css": "",
+  "render": "",
+  "scene3d": {
+    "version": 1,
+    "camera": {
+      "x": {
+        "param": "cameraX"
+      },
+      "y": {
+        "param": "cameraY"
+      },
+      "distance": {
+        "param": "cameraDistance"
+      },
+      "yaw": {
+        "param": "cameraYaw"
+      },
+      "pitch": {
+        "param": "cameraPitch"
+      },
+      "roll": {
+        "param": "cameraRoll"
+      },
+      "fov": {
+        "param": "cameraFov"
+      }
+    },
+    "objects": [
+      {
+        "id": "model",
+        "type": "model",
+        "resource": {
+          "param": "modelFile"
+        },
+        "position": {
+          "x": {
+            "param": "modelPositionX"
+          },
+          "y": {
+            "param": "modelPositionY"
+          },
+          "z": {
+            "param": "modelPositionZ"
+          }
+        },
+        "rotation": {
+          "x": {
+            "param": "modelRotationX"
+          },
+          "y": {
+            "param": "modelRotationY"
+          },
+          "z": {
+            "param": "modelRotationZ"
+          }
+        },
+        "scale": {
+          "x": {
+            "param": "modelScaleX"
+          },
+          "y": {
+            "param": "modelScaleY"
+          },
+          "z": {
+            "param": "modelScaleZ"
+          }
+        },
+        "width": {
+          "param": "modelSize"
+        },
+        "visible": {
+          "param": "modelVisible"
+        },
+        "animation": {
+          "clip": {
+            "param": "glbClip"
+          },
+          "speed": {
+            "param": "glbSpeed"
+          },
+          "start": {
+            "param": "glbStart"
+          },
+          "loop": {
+            "param": "glbLoop"
+          },
+          "enabled": {
+            "param": "glbEnabled"
+          }
+        }
+      },
+      {
+        "id": "title",
+        "type": "text",
+        "text": {
+          "param": "text3d"
+        },
+        "fontSize": {
+          "param": "textSize"
+        },
+        "extrusion": {
+          "param": "textDepth"
+        },
+        "color": {
+          "param": "textColor"
+        },
+        "visible": {
+          "param": "textVisible"
+        },
+        "position": {
+          "y": 440
+        },
+        "rotation": {
+          "y": -12
+        }
+      }
+    ],
+    "lighting": {
+      "ambient": {
+        "param": "lightAmbient"
+      },
+      "key": {
+        "param": "lightKey"
+      },
+      "environment": {
+        "param": "lightEnvironment"
+      },
+      "color": {
+        "param": "lightColor"
+      },
+      "x": {
+        "param": "lightX"
+      },
+      "y": {
+        "param": "lightY"
+      },
+      "z": {
+        "param": "lightZ"
+      }
+    },
+    "animation": []
+  },
+  "models": {
+    "cube": {
+      "name": "cubo-material.glb",
+      "mime": "model/gltf-binary",
+      "data": "Z2xURgIAAACoCQAAuAUAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAiLCJnZW5lcmF0b3IiOiJNR1QgYXV0aG9yZWQgZml4dHVyZSJ9LCJzY2VuZSI6MCwic2NlbmVzIjpbeyJub2RlcyI6WzBdfV0sIm5vZGVzIjpbeyJtZXNoIjowLCJ0cmFuc2xhdGlvbiI6WzcsNCwtMl19XSwibWVzaGVzIjpbeyJwcmltaXRpdmVzIjpbeyJhdHRyaWJ1dGVzIjp7IlBPU0lUSU9OIjowLCJOT1JNQUwiOjEsIlRFWENPT1JEXzAiOjJ9LCJpbmRpY2VzIjozLCJtYXRlcmlhbCI6MH1dfV0sImJ1ZmZlcnMiOlt7ImJ5dGVMZW5ndGgiOjk4MH1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjoyODh9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0IjoyODgsImJ5dGVMZW5ndGgiOjI4OH0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjU3NiwiYnl0ZUxlbmd0aCI6MTkyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NzY4LCJieXRlTGVuZ3RoIjo3Mn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjg0MCwiYnl0ZUxlbmd0aCI6Nzl9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0Ijo5MjAsImJ5dGVMZW5ndGgiOjEyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6OTMyLCJieXRlTGVuZ3RoIjo0OH1dLCJhY2Nlc3NvcnMiOlt7ImJ1ZmZlclZpZXciOjAsImNvbXBvbmVudFR5cGUiOjUxMjYsImNvdW50IjoyNCwidHlwZSI6IlZFQzMiLCJtaW4iOlstMC41LC0wLjUsLTAuNV0sIm1heCI6WzAuNSwwLjUsMC41XX0seyJidWZmZXJWaWV3IjoxLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MjQsInR5cGUiOiJWRUMzIn0seyJidWZmZXJWaWV3IjoyLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MjQsInR5cGUiOiJWRUMyIn0seyJidWZmZXJWaWV3Ijoz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"
+    }
+  },
+  "recommended": {
+    "duration": 3,
+    "aspect": "horizontal",
+    "resolution": 720
+  }
+}

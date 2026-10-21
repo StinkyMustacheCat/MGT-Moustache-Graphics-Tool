@@ -1,0 +1,276 @@
+MGT 0.6.3 — FORMATO DE COMPOSICIÓN v3 (v1 y v2 siguen admitidos)
+
+Pega un documento JSON completo en Código y pulsa Aplicar código. La lógica
+de animación la escribe el creador; MGT solo lee sus declaraciones y renderiza.
+
+CAMPOS SUPERIORES
+version: 3 para imágenes; 1 y 2 siguen admitidos. name: nombre (hasta 100 caracteres).
+parameters: lista de 0 a 48 parámetros (se recomiendan 24 o menos).
+html, css, render: cadenas de hasta 2 000 000 caracteres cada una.
+seed: entero de 0 a 4294967295, opcional (por defecto 1).
+stops: lista opcional de 0 a 24 paradas editables.
+recommended: ajustes opcionales {duration, aspect, resolution}.
+metadata: información opcional para organizar y compartir la composición.
+
+CONTROLES
+Todos necesitan id único, label, type y default. id empieza por letra ASCII y
+solo admite letras, números y guion bajo (máximo 40). label: máximo 80 caracteres.
+No uses constructor, prototype ni __proto__ como identificadores.
+
+text: área de texto, hasta 1000 caracteres.
+number: campo numérico; requiere min < max y step > 0. control: "slider"
+  añade un slider acoplado al mismo valor. Sin control, solo aparece el número.
+color: selector, campo hexadecimal y opacidad; acepta #RRGGBB y #RRGGBBAA.
+boolean: casilla activada/desactivada.
+select: lista de 1 a 30 cadenas únicas declaradas en options; default debe
+  coincidir con una opción. Cada cadena admite hasta 100 caracteres.
+font: selector de familias instaladas. Si una fuente falta, se indica en la
+  lista y el navegador puede sustituirla. No se incluyen archivos de fuentes.
+
+Slider es una presentación de number, no un type nuevo.
+El alfa del color se compone sobre el fondo sólido. No hay video transparente.
+
+PARADAS EDITABLES
+Ejemplo de declaración:
+{"id":"stop1","label":"Parada 1","element":"#title","x":"aX","y":"aY","at":0.25}
+
+- element es un selector #id de un elemento real del html.
+- x e y son ids distintos de parámetros number declarados en parameters.
+- Ambos valores representan porcentajes del cuadro: 0..100 es el interior;
+  sus min y max pueden admitir posiciones exteriores.
+- at es el instante normalizado (0..1) en el que se edita esa parada.
+- Al seleccionar la parada, MGT muestra ese instante y permite arrastrar el
+  objeto. El arrastre actualiza esos dos parámetros, respetando min/max/step.
+- Tu render debe usar esos parámetros para que el objeto esté en ese punto.
+  MGT no dibuja trayectorias, no deduce paradas y no impone el movimiento.
+- Durante la edición, ctx.progress toma exactamente at; ctx.editingStop
+  identifica la parada. Al reproducir y exportar editingStop es null.
+- El límite visual usa el bounding box del elemento. Para grupos utiliza un
+  contenedor con dimensiones reales. Solo se arrastra una parada a la vez.
+- El editor admite elementos fuera del cuadro; el exportador los recorta.
+
+SEMILLA Y ALEATORIZACIÓN
+ctx.seed contiene la semilla visible. ctx.random(index) devuelve un número
+reproducible entre 0 (incluido) y 1 (excluido), calculado con semilla e índice.
+Es una función sin estado: no depende del orden de los fotogramas.
+Usa índices enteros no negativos para partículas, ruido o variaciones.
+Nueva semilla cambia la semilla; la composición debe usar ctx.random para
+reflejarla. No cambia automáticamente los demás controles.
+
+randomize: true habilita un parámetro para el botón Aleatorizar controles.
+Solo se acepta en number, color, boolean y select. Por defecto es false.
+Los números respetan min, max y step; las listas usan sus options. Los colores
+cambian RGB conservando el alfa actual. Nunca se aleatorizan textos ni fuentes.
+La misma semilla y los mismos parámetros producen la misma combinación.
+Deshacer recupera el último cambio de parámetros/semilla; un arrastre continuo
+se trata como un solo cambio. No es un historial de edición del código.
+
+AJUSTES RECOMENDADOS
+"recommended": {"duration":6,"aspect":"vertical","resolution":1080}
+duration: de 0.1 a 3600 segundos; aspect: horizontal, vertical o square;
+resolution: 1080, 1440 o 2160. Los campos son opcionales.
+MGT ofrece aplicarlos al cargar el código. Rechazar conserva los ajustes actuales.
+No hay un ajuste de FPS: siempre 60.
+
+METADATOS
+metadata puede contener id, description, category, tags, author, license,
+templateVersion y thumbnail (ruta reservada para una futura miniatura).
+name y version viven en el nivel superior de la composición.
+La galería lee archivos .mgt.json de la carpeta galeria junto al programa.
+Se actualiza al abrirla o al pulsar Actualizar galería. Sin miniaturas.
+editorSettings: {background:"#RRGGBB"} conserva opcionalmente el fondo
+del escenario al guardar y aplicar. La versión 3 añade imágenes estáticas.
+
+RENDER
+render contiene el cuerpo JavaScript de una función síncrona que recibe ctx:
+root, params, width, height, frame, fps, time, duration, progress, seed,
+random(index), editingStop e image(resourceId).
+
+root contiene html. Busca elementos con root.querySelector. Usa textContent
+para texto editable. No accedas a parent.document ni a APIs internas de MGT.
+width/height son dimensiones de diseño: 1920x1080, 1080x1920 o 1080x1080.
+La exportación 1440 escala todo por 4/3; 2160, por 2. width/height no cambian.
+frame comienza en 0; fps siempre es 60; time es frame/60 durante reproducción
+y exportación. progress llega exactamente a 1 en el último fotograma.
+
+Cada llamada debe reconstruir el fotograma desde ctx. La barra puede saltar
+hacia atrás. No acumules posiciones, no dependas de una inicialización solo
+en frame 0 y no uses temporizadores, Date.now, performance.now o Math.random.
+Las animaciones CSS deben controlar su tiempo explícitamente desde render.
+No se admiten render asíncronos ni descargas de red. Los scripts dentro de html
+no se ejecutan; escribe la lógica en render. Puedes definir funciones auxiliares.
+
+HTML/CSS/SVG/Canvas y JavaScript nativo, sin frameworks, imports ni CDN.
+Hay parámetro image en v3, sin carga de recursos externos. Usa fuentes instaladas.
+El código se ejecuta aislado, pero un bucle infinito puede bloquear la vista
+previa: utiliza código de confianza y bucles acotados.
+
+BORRADOR Y COMPARTIR
+Editar el código no cambia el video hasta Aplicar código. Los controles no
+sobrescriben el borrador. Capturar valores actuales genera el documento de la
+composición aplicada con sus valores, semilla y ajustes actuales, pidiendo
+confirmación antes de reemplazar un borrador. Copia ese documento para compartir.
+Guardar efecto crea una copia JSON con valores y semilla actuales; no guarda
+un borrador sin aplicar. Volver a texto conserva el borrador. Al cerrar
+o recargar no se guarda el proyecto. Solo se recuerdan preferencias de interfaz.
+
+IMÁGENES v3
+Parámetro: {"id":"photo","label":"Imagen","type":"image","default":""}.
+Valor: "" o un id existente en resources; no acepta randomize. resources es un objeto; ids empiezan por letra, luego letras/números/_/-, hasta 80 caracteres. Sin claves reservadas.
+Cada recurso: {name,mime,width,height,data}. name <=160 caracteres; data base64 SIN prefijo data:. mime: image/png, image/jpeg, image/webp o image/svg+xml. Las dimensiones son informativas; MGT las obtiene del archivo real. Una IA debe dejar resources:{} y espacios vacíos.
+HTML: <img data-mgt-image="photo" alt=""> enlaza el parámetro. No sustituir el nodo durante render. MGT oculta img vacío; el código decide cómo mostrar el marco/grupo sin imagen.
+ctx.image(ctx.params.photo): null o {src,width,height,element}, precargado. src sirve para CSS, element para Canvas drawImage. No modificar element, recrear imágenes ni decodificar en render. Las URLs temporales no se guardan en JSON.
+Límites: 8 recursos; 10 MB/raster; 4096 px/lado; 16 MP/imagen; total 25 MB y 32 MP raster. SVG 1 MB, 5000 elementos, 64 niveles, 100000 caracteres por trazado.
+SVG estático con atributos de presentación: formas, trazados, grupos, gradientes, clipPath, mask y texto. No style, use, foreignObject, image, scripts, animaciones, entidades ni recursos externos. xmlns SVG y width/height en px o viewBox obligatorios. Recomendado texto a trazados.
+Sin GIF, APNG, WebP animado, SVG animado ni JPEG multipicture. JSON completo hasta 36 MB; código/metadatos sin recursos hasta 8 MB. html/css/render admiten hasta 2000000 caracteres por campo; máximo 48 parámetros.
+Guardar composición incrusta recursos; Guardar plantilla vacía image/default y resources. Descargar JSON entrega el archivo completo. Importar la misma imagen reutiliza su recurso; quitar un espacio no borra otros.
+Reducción opcional a WebP sin tocar el original; para leer/reducir máximo 50 MB, 64 MP y 16384 px/lado. La preparación ocurre ANTES del render, que continúa síncrono.
+
+EJEMPLO COMPLETO (texto v2, compatible)
+{
+  "version": 2,
+  "name": "Texto en movimiento",
+  "seed": 1,
+  "recommended": {
+    "duration": 6,
+    "aspect": "horizontal",
+    "resolution": 1080
+  },
+  "stops": [
+    {
+      "id": "start",
+      "label": "Inicio",
+      "element": "#title",
+      "x": "startX",
+      "y": "startY",
+      "at": 0
+    },
+    {
+      "id": "end",
+      "label": "Final",
+      "element": "#title",
+      "x": "endX",
+      "y": "endY",
+      "at": 1
+    }
+  ],
+  "parameters": [
+    {
+      "id": "text",
+      "label": "Texto",
+      "type": "text",
+      "default": "Haz que tus\nideas se muevan."
+    },
+    {
+      "id": "color",
+      "label": "Color",
+      "type": "color",
+      "default": "#f4f4f5",
+      "randomize": true
+    },
+    {
+      "id": "font",
+      "label": "Fuente instalada",
+      "type": "font",
+      "default": "Arial"
+    },
+    {
+      "id": "size",
+      "label": "Tamaño",
+      "type": "number",
+      "default": 100,
+      "min": 12,
+      "max": 400,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "startX",
+      "label": "Inicio horizontal (%)",
+      "type": "number",
+      "default": 30,
+      "min": -100,
+      "max": 200,
+      "step": 0.1
+    },
+    {
+      "id": "startY",
+      "label": "Inicio vertical (%)",
+      "type": "number",
+      "default": 50,
+      "min": -100,
+      "max": 200,
+      "step": 0.1
+    },
+    {
+      "id": "endX",
+      "label": "Final horizontal (%)",
+      "type": "number",
+      "default": 70,
+      "min": -100,
+      "max": 200,
+      "step": 0.1
+    },
+    {
+      "id": "endY",
+      "label": "Final vertical (%)",
+      "type": "number",
+      "default": 50,
+      "min": -100,
+      "max": 200,
+      "step": 0.1
+    },
+    {
+      "id": "easing",
+      "label": "Movimiento",
+      "type": "select",
+      "default": "linear",
+      "options": [
+        "linear",
+        "smooth"
+      ]
+    },
+    {
+      "id": "visible",
+      "label": "Mostrar texto",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "html": "<div id=\"title\"></div>",
+  "css": "#title { position:absolute; transform:translate(-50%,-50%); white-space:pre; text-align:center; line-height:1.15; font-weight:400; }",
+  "render": "const { root, params: p, progress, width, height } = ctx;\nconst title = root.querySelector('#title');\nconst t = p.easing === 'smooth' ? progress * progress * (3 - 2 * progress) : progress;\ntitle.textContent = p.text;\nObject.assign(title.style, { display: p.visible ? 'block' : 'none', fontFamily: JSON.stringify(p.font), fontSize: p.size + 'px', color: p.color, left: (p.startX + (p.endX - p.startX) * t) * width / 100 + 'px', top: (p.startY + (p.endY - p.startY) * t) * height / 100 + 'px' });"
+}
+
+
+SUBTÍTULOS (MGT 0.6.3)
+Una composición version:3 puede declarar subtitles:{version:1,kind:"template"|"composition",timing:"cue"|"word"|"estimated",tail:0.25,cues:[...]}. La transcripción permanece fuera del render. El contexto añade ctx.subtitles.cues, words, timing, tail y at(time,tail). Extensión recomendada .wmgt.json. Contrato completo, límites, ejemplos e importación Wordline en /subtitle-contract y SUBTITULOS.md. Una plantilla vacía se carga desde Subtítulos; no se aplica como composición.
+
+MGT 0.6.3: recommended.resolution admite 480, 540, 720, 1080, 1440 y 2160. El modo rápido se selecciona en el editor; no cambia el contrato WMGT.
+
+AUDIO DEL ESCENARIO (0.6.3): el usuario carga un WAV fuera de la composición. No añadas audio, rutas WAV ni audioId al JSON WMGT ni al contexto render(ctx). Los subtítulos no se transcriben ni alinean de nuevo.
+
+
+
+3D · MGT 0.6.4: usa composición version:4 con scene3d:{version:1,camera:{...},objects:[...]}. Cada campo de cámara/objeto admite literal o {param:"id"}, referenciando parameters del tipo correcto y límites válidos. Cámara: x,y,distance,yaw,pitch,roll,fov. Objetos: box,plane,text; position/rotation/scale x,y,z; width,height,color,visible; depth solo box; text,font,fontSize solo text. Colores 3D opacos #RRGGBB. No modelos ni texto extruido. html/css/render siguen obligatorios (pueden estar vacíos). Los documentos anteriores siguen admitidos. Consulta 3D-DECLARABLE.md y examples/04-escena-3d.mgt.json.
+
+
+MGT 0.7.0: las pistas Overlay admiten JSON completos independientes con sus parámetros y duración propia. No mezcles códigos entre clips. Prepara fondos transparentes en html/css/render si deben verse sobre MG; el programa no elimina fondos explícitos. Las recomendaciones de duración sirven solo al clip, sin cambiar el proyecto. La cota 1 no guarda ni exporta el conjunto y no activa efectos de sonido. Consulta PISTAS-0.7.0.md.
+
+
+MGT 0.7.1: cada pista y overlay conserva su propio JSON y parámetros declarables. Aplicar subtítulos no reemplaza MGT. Su capa html/body/root es transparente y se dibuja por encima de Overlay. Los recursos de imagen se importan por clip y no se comparten con otros. Guarda JSON independientes: el proyecto multipista y su exportación se incorporarán en 0.7.2. Efectos de sonido se activará en 0.7.3. Ver PISTAS-0.7.1.md.
+
+
+MGT 0.7.3: Exportación de todas las pistas y mezcla AAC del audio principal con efectos recortados; respeta tiempos, visibilidad, volúmenes y silencios. Incluye los controles de 0.7.2. El recorte de audio ocurre en los controles del efecto y no en el código de la composición. Mantén parámetros declarables y recursos independientes por clip. No se guarda el proyecto completo. Las cotas 3D y recursos animados siguen pendientes.
+
+MGT 0.8.0: los controles 3D se agrupan automáticamente según referencias a parámetros declarados; cámara y objetos conservan su contrato. Visibilidad, suelo y transformaciones deben declararse en parameters. Texto plano sin extrusión. Modelos importados aún no admitidos. No añadir campos de agrupación a scene3d.
+
+MGT 0.8.1: version:4 admite models:{id:{name,mime:'model/gltf-binary',data:base64}} y parameter type:model default:id o ''. scene3d.objects type:model usa resource:id o {param:identificador}, width como tamaño proporcional, position/rotation/scale/visible declarables. Hasta 2 objetos y 2 recursos GLB por composición. GLB autocontenido estático, sin URL externos/Draco/Meshopt/KTX/sparse. No se reproducen animaciones. Leer MODELOS-GLB.md.
+
+MGT 0.9.0: MP4 H.264 como recurso visual en version:4, parámetro type:video y videos autocontenidos. Reloj local del clip, último fotograma conservado, sin audio del recurso ni ajuste de duración. ctx.video(id).element es el canvas del fotograma actual; canvas[data-mgt-video="idDelParametro"] es el enlace automático. Requiere controles declarados. Ver MP4-RECURSOS.md o /video-contract; ejemplo 09. Esta nota sustituye limitaciones anteriores sobre MP4 como recurso; no añade vídeo base ni guardado del proyecto.
+
+MGT 0.9.1: GIF animado como recurso visual en version:4, parameter type:gif, gifs:{id:{name,mime:"image/gif",data:base64}}. Usa canvas[data-mgt-gif="idDelParametro"] o ctx.gif(id).element. Cada recurso sigue el reloj local del clip, conserva transparencia y mantiene el último fotograma tras un ciclo; ignora repeticiones incorporadas hasta 0.9.2. Controles declarables, sin cambiar duración. Consulta GIF-RECURSOS.md o /gif-contract; ejemplo 10.
+
+MGT 0.9.2: animatedSVGs autocontenidos, parameter type:svgAnimation, canvas[data-mgt-svg="idDelParametro"] o ctx.svgAnimation(id).element. SVG SMIL limitado a animate/animateTransform (translate/scale/rotate), valores numéricos/#RRGGBB y linear/discrete, sin CSS animado/scripts/URL. playback:{idDelParametro:{end:"hold"|"loop"|"hide" o {param:"selectDeclarado"}}} controla el final de MP4/GIF/SVG con el reloj local. Los códigos hold/loop/hide se muestran como Conservar último fotograma/Repetir/Ocultar en Propiedades. Ver RECURSOS-ANIMADOS.md y ejemplo 11. Las reglas declaradas sustituyen el final fijo de 0.9.0/0.9.1; sin regla se conserva hold.
+
+MGT 0.9.3: pista Vídeo base MP4 debajo de MGT, sobre el fondo, independiente de MP4 como recurso. Inicio fijo en 0, duración propia y prioridad igual a MGT/Subtítulos: ampliación pregunta, una pista corta no acorta el proyecto. Audio del MP4 no se reproduce/mezcla; cargar WAV por separado. Controles de recurso y final declarables heredados de 0.9.2, ojo/candado/portapapeles/deshacer propios. No añadir vídeo base al JSON de MGT principal; es parte de la estructura de sesión, cuyo guardado sigue pendiente. Ver VIDEO-BASE.md.

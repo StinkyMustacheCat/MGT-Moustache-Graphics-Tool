@@ -1,6 +1,8 @@
-# MGT 1.5.2 - pruebas
+# MGT 1.6.4 - guía de pruebas
 
-El paquete incluye pruebas para el archivo y reapertura de proyectos (project-archive.test.cjs, project-roundtrip.integration.cjs), los assets MGT (mgt-asset.test.cjs, asset-render.integration.cjs), pistas de linea de tiempo y edicion. Ejecuta las unitarias desde programa/ con node --test tests/*.test.cjs; las integraciones se ejecutan individualmente con el runtime configurado.
+La verificación de MGT 1.6.4 ejecutó `node --test tests/*.test.cjs`: 143 pruebas pasaron, sin fallos ni omisiones. También se inició el Editor portable y se comprobó el servidor, la interfaz, la ayuda y la biblioteca; el smoke test del Engine comprobó importación y render de JSON/proyecto, alfa, audio y cierre. No se probó compatibilidad con NLE ni con un segundo equipo, y no se incluyen adaptadores para NLE.
+
+El paquete incluye pruebas para el archivo y reapertura de proyectos (project-archive.test.cjs, project-roundtrip.integration.cjs), los assets MGT v1/v2, pistas de línea de tiempo y edición. Ejecuta las unitarias desde la raíz con `node --test tests/*.test.cjs`; las integraciones requieren el runtime configurado y se ejecutan individualmente desde `tests/`. Los resultados de pruebas consignados bajo encabezados de versiones anteriores describen esas versiones, no esta entrega.
 
 Los resultados y conteos bajo encabezados de versiones anteriores describen esas versiones; no son una declaracion de ejecucion de pruebas para este ZIP.
 

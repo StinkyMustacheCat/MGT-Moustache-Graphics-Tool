@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
-const MAX_PROJECT=160*1024*1024,MAX_ARCHIVE=3*1024*1024*1024,MAX_ENTRIES=70;
+const MAX_PROJECT=160*1024*1024,MAX_ARCHIVE=3*1024*1024*1024,MAX_ENTRIES=322;
 const table=Uint32Array.from({length:256},(_,i)=>{let n=i;for(let j=0;j<8;j++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0;});
 const crc=(value,bytes)=>{let n=value;for(const b of bytes)n=table[(n^b)&255]^(n>>>8);return n;};
 async function readExact(handle,buffer,position){let done=0;while(done<buffer.length){const part=await handle.read(buffer,done,buffer.length-done,position+done);if(!part.bytesRead)throw Error('Proyecto ZIP truncado.');done+=part.bytesRead;}}
-const validName=name=>name==='project.json'||/^audio\/[0-9]{1,3}\.wav$/.test(name);
+const validName=name=>name==='project.json'||/^(audio\/[0-9]{1,3}\.wav|video\/[0-9]{1,3}\.mp4)$/.test(name);
 async function checksum(entry){let sum=0xffffffff,size=0;if(entry.data){const bytes=Buffer.from(entry.data);size=bytes.length;sum=crc(sum,bytes);}else{for await(const bytes of fs.createReadStream(entry.file)){size+=bytes.length;sum=crc(sum,bytes);}}return {size,crc:(sum^0xffffffff)>>>0};}
 async function create(destination,entries){
  if(!Array.isArray(entries)||!entries.length||entries.length>MAX_ENTRIES||entries[0].name!=='project.json'||new Set(entries.map(e=>e.name)).size!==entries.length||entries.some(e=>!validName(e.name)||Boolean(e.data)===Boolean(e.file)))throw Error('Entradas de proyecto no válidas.');

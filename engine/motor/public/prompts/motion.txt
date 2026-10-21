@@ -1,0 +1,32 @@
+MGT 1.0.0 · PROMPT ESPECIALIZADO · MOTION GRAPHICS
+
+Genera una composición declarativa para Moustache Graphics Tool (MGT). Este prompt se centra en texto, formas, SVG inline, Canvas 2D, recorridos, paradas y efectos calculables. No modifiques MGT, no inventes APIs y no uses servicios externos.
+
+ENTREGA
+Devuelve un único JSON completo, válido y autocontenido, listo para «Código > Aplicar código». Sin Markdown, comentarios, comas finales, imports, URLs, dependencias ni fragmentos pendientes. `html`, `css` y `render` son cadenas JSON correctamente escapadas. `render` es el cuerpo síncrono de una función que recibe `ctx`; no escribas `function render` ni uses async. Si el usuario pide solo código, entrega solo el JSON. Tras el JSON indica brevemente duración, proporción y si requiere importar algún recurso.
+
+CONTRATO BASE
+- Usa la versión mínima compatible: v1 para una composición básica; v2 si usas `seed`, `recommended`, `metadata`, `stops`, fuentes declaradas, color con alfa o controles de aleatorización; v3 si usas imágenes estáticas o `subtitles`; v4 para `scene3d`, GLB, MP4, GIF o SVG animado.
+- Nivel superior obligatorio: `version`, `name`, `parameters`, `html`, `css`, `render`. `name` no supera 100 caracteres. Cada cadena de código admite hasta 2 000 000 caracteres; el código y metadatos sin recursos, hasta 8 MiB; el JSON completo, hasta 36 MB.
+- `parameters` tiene 0–48 elementos con id único que cumpla `^[a-zA-Z][a-zA-Z0-9_]{0,39}$`, label no vacía de hasta 80 caracteres y default válido. Tipos: `text`, `number` (con `min < max`, `step > 0` y opcionalmente `control:"slider"`), `color`, `boolean`, `select`, `font`, y `image` solo desde v3. `randomize:true` solo en number/color/boolean/select.
+- Incluye `recommended` solo si es útil: `duration` entre 0.1 y 3600, `aspect` `horizontal`, `vertical`, `square` o `classic` (16:9, 9:16, 1:1 o 4:3), y `resolution` una de 480, 540, 720, 1080, 1440 o 2160. No declares fps, bitrate, codec ni rutas.
+
+RENDER DETERMINISTA
+`ctx` solo ofrece `root`, `params`, `width`, `height`, `frame`, `fps`, `time`, `duration`, `progress`, `seed`, `random(index)`, `editingStop`, `image(resourceId)`, `video(id)`, `gif(id)`, `svgAnimation(id)` y `subtitles`. Para este enfoque usa principalmente `root`, `params`, `width`, `height`, `progress` y `time`.
+
+Siempre 60 FPS: `N = Math.round(duration * 60)`, `frame` va de 0 a `N - 1`, `time = frame / 60`, y `progress = frame / Math.max(1, N - 1)`; el último progress llega a 1, pero time no llega a duration. Reconstruye todo en cada llamada aunque la barra retroceda. No uses estado acumulado, frame 0 como inicialización, `Math.random`, Date, temporizadores, requestAnimationFrame, CSS animations/transitions autónomas, red, promesas ni bucles sin cota. `ctx.random(i)` es reproducible y sin estado.
+
+DOM Y COORDENADAS
+`root` contiene el HTML de la composición. Usa `root.querySelector`, `textContent` y estilos de sus hijos. No accedas a `parent`, `window.innerWidth`, APIs internas ni documentos externos. Diseña con las dimensiones de `ctx`; no cambies la posición, tamaño, transform u overflow de `root`. Usa hijos con `position:absolute`, dimensiones reales y `transform:translate(-50%,-50%)` cuando necesites centrar objetos. Para un fondo editable declara un parámetro color opaco y asigna `root.style.backgroundColor` en cada render.
+
+PARADAS
+Puedes declarar hasta 24 `stops` con `{id,label,element:"#id",x:"paramNumber",y:"paramNumber",at}`. x e y son parámetros number distintos en porcentajes; `at` está entre 0 y 1. El arrastre solo cambia X/Y: el render debe usar esos parámetros. Las paradas no animan por sí solas. Interpola segmentos ordenados con `progress`, evita divisiones por cero y haz coincidir exactamente los extremos. `editingStop` solo está presente al editar; al reproducir/exportar es null.
+
+ALCANCE Y SALIDA
+Usa SVG inline, Canvas 2D y JavaScript nativo dentro del documento. Declara un control para cada decisión que el usuario deba editar y haz que todos afecten al render. Limpia el Canvas y vuelve a calcular partículas, trayectorias y estelas desde el instante actual; limita cantidades y costes para 4K. No añadas audio, vídeo base, SFX, subtítulos ni una lista de pistas al JSON: se cargan en sus pistas independientes y el guardado completo del proyecto todavía no forma parte de este contrato. Un JSON para Overlay debe ser una composición independiente.
+
+ANTES DE ENTREGAR
+Comprueba JSON, ids, defaults, límites, selectores y que cada parámetro usado exista y afecte al render. Revisa el inicio, el último fotograma, cada parada y saltos hacia atrás. Elige valores razonables si faltan detalles y deja al final esta solicitud:
+
+SOLICITUD DEL USUARIO
+[Describe aquí texto, estilo, colores, fondo, proporción, duración, recorrido, paradas, ritmo y controles deseados.]

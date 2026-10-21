@@ -1,0 +1,87 @@
+{
+  "version": 3,
+  "name": "01 · Fondo con imagen",
+  "metadata": {
+    "author": "MGT",
+    "license": "CC0-1.0",
+    "description": "Plantilla de ejemplo: importa una imagen desde sus parámetros."
+  },
+  "seed": 1,
+  "recommended": {
+    "duration": 6,
+    "aspect": "horizontal",
+    "resolution": 1080
+  },
+  "resources": {},
+  "html": "<div id=\"group\"><div id=\"frame\"><img id=\"photo\" data-mgt-image=\"photo\" alt=\"\"><div id=\"empty\">Importa tu imagen<br>desde el panel de parámetros</div></div></div>",
+  "css": "#group{position:absolute;transform-origin:center}#frame{position:relative;width:100%;height:100%;overflow:hidden;background:#303445}#photo{width:100%;height:100%;object-fit:cover;display:block}#empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:white;font:32px Arial;padding:40px}",
+  "parameters": [
+    {
+      "id": "photo",
+      "label": "Tu imagen",
+      "type": "image",
+      "default": ""
+    },
+    {
+      "id": "fit",
+      "label": "Encaje",
+      "type": "select",
+      "default": "Cubrir",
+      "options": [
+        "Cubrir",
+        "Contener"
+      ]
+    },
+    {
+      "id": "zoom",
+      "label": "Zoom de la imagen",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "max": 3,
+      "step": 0.01,
+      "control": "slider"
+    },
+    {
+      "id": "panX",
+      "label": "Encuadre horizontal (%)",
+      "type": "number",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "panY",
+      "label": "Encuadre vertical (%)",
+      "type": "number",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "control": "slider"
+    },
+    {
+      "id": "blur",
+      "label": "Desenfoque (px)",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "control": "slider"
+    },
+    {
+      "id": "travel",
+      "label": "Recorrido horizontal (%)",
+      "type": "number",
+      "default": 10,
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "control": "slider"
+    }
+  ],
+  "render": "const p=ctx.params,g=ctx.root.querySelector('#group'),f=ctx.root.querySelector('#frame'),img=ctx.root.querySelector('#photo');ctx.root.style.backgroundColor='#141323';ctx.root.querySelector('#empty').style.display=ctx.image(p.photo)?'none':'grid';img.style.objectFit=p.fit==='Contener'?'contain':'cover';img.style.objectPosition=p.panX+'% '+p.panY+'%';img.style.transform='scale('+p.zoom+')';img.style.transformOrigin=p.panX+'% '+p.panY+'%';img.style.filter='blur('+p.blur+'px)';Object.assign(g.style,{width:ctx.width+'px',height:ctx.height+'px',left:'0px',top:'0px'});img.style.transform='scale('+(p.zoom+.15)+') translateX('+((ctx.progress-.5)*p.travel)+'%)';"
+}

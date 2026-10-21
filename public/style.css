@@ -112,3 +112,18 @@ a{color:var(--accent)}#handleLabel{color:var(--ink)}#dragHandle,.export-outline{
 .visual-lane-actions{left:-188px;right:auto;bottom:1px;justify-content:flex-start}.visual-lane-actions .overlay-remove-lane{min-width:23px;min-height:22px}
 .audio-lane-actions{left:-188px;top:13px}.audio-lane-actions button{min-width:23px;min-height:22px;padding:1px 3px;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--text)}
 #effectsLane [data-audio-lane]>button:first-child{left:-188px;right:auto;top:1px;max-width:176px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 1.5.3: compact lane heads and actual nested menus. */
+.audio-lane-label{position:absolute;left:-188px;top:1px;width:176px;font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.audio-lane-actions{left:-188px;top:13px}
+.track-picker .context-submenu,.track-context-menu .context-submenu{position:relative}
+.track-picker .context-submenu-popup,.track-context-menu .context-submenu-popup{display:none;position:absolute;left:calc(100% - 4px);top:-6px;min-width:180px;padding:5px;background:var(--panel);border:1px solid var(--line);border-radius:7px;box-shadow:0 8px 24px #0008;z-index:21}
+.track-picker .context-submenu:hover>.context-submenu-popup,.track-picker .context-submenu.open>.context-submenu-popup,.track-context-menu .context-submenu:hover>.context-submenu-popup,.track-context-menu .context-submenu.open>.context-submenu-popup{display:block}
+.track-picker .context-submenu-popup,.track-context-menu.open-left .context-submenu-popup{left:auto;right:calc(100% - 4px)}
+.track-picker .context-submenu>button,.track-context-menu .context-submenu>button{width:100%;text-align:left}
+.track-picker [hidden],.track-context-menu [hidden]{display:none!important}
+.project-actions{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.project-actions button{flex:1 1 120px}
+#exportDialog{width:min(860px,calc(100vw - 32px));max-width:860px;max-height:90dvh}
+#exportDialog .export-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#exportDialog .export-details>div{min-width:0}
+@media(max-width:650px){#exportDialog .export-details{grid-template-columns:1fr}.context-submenu-popup{left:auto!important;right:0;top:100%!important}}
+.stage-area{scrollbar-gutter:stable}

@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const {spawn,execFileSync}=require('node:child_process');
+const packageRoot=path.resolve(process.argv[2]||''),motor=path.join(packageRoot,'motor'),node=path.join(packageRoot,'runtime','node','node.exe'),ffprobe=path.join(packageRoot,'runtime','ffmpeg','ffprobe.exe');
+const dataRoot=fs.mkdtempSync(path.join(os.tmpdir(),'mgt-engine-smoke-')),instance=crypto.createHash('sha256').update(motor.toLowerCase()).digest('hex').slice(0,16),delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+(async()=>{let child,url,info;try{
+ assert(fs.existsSync(node)&&fs.existsSync(ffprobe)&&fs.existsSync(path.join(motor,'server.cjs')),'Paquete incompleto.');
+ child=spawn(node,[path.join(motor,'server.cjs')],{cwd:motor,env:{...process.env,MGT_DATA_ROOT:dataRoot},windowsHide:true,stdio:'ignore'});
+ for(let i=0;i<200;i++){try{const running=JSON.parse(fs.readFileSync(path.join(dataRoot,instance,'running.json')));if(running.pid!==child.pid)throw Error('Sesión incorrecta');url=running.url;info=await(await fetch(url+'/api/info')).json();break;}catch{await delay(100);}}assert(info&&info.version===require(path.join(motor,'package.json')).version,'El motor no arrancó.');
+ const capabilities=await(await fetch(url+'/api/asset/v2/capabilities')).json();assert(capabilities.assetContracts.includes(2));
+ const post=async(route,body)=>{const response=await fetch(url+route,{method:'POST',headers:{Origin:url,'X-Motion-Token':info.token,'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();assert(response.ok,JSON.stringify(data));return data;};
+ const request=JSON.parse(fs.readFileSync(path.join(packageRoot,'ejemplos','solicitud-inspeccion.json'))),asset=await post('/api/asset/v2/import',request);
+ const preflight=await post('/api/asset/v2/preflight',{assetId:asset.assetId,profile:'preview',fps:24,overrides:{color:'#00ff00'}});assert.equal(preflight.frames,48);
+ const started=await post('/api/asset/v2/render',{assetId:asset.assetId,profile:'preview',fps:24,overrides:{color:'#00ff00'}});let job;
+ for(let i=0;i<1200;i++){job=await(await fetch(url+'/api/jobs/'+started.id)).json();if(['done','error','cancelled'].includes(job.status))break;await delay(50);}assert.equal(job.status,'done',JSON.stringify(job));
+ const movie=path.join(dataRoot,'sample.mov');fs.writeFileSync(movie,Buffer.from(await(await fetch(url+'/api/jobs/'+started.id+'/download')).arrayBuffer()));const streams=JSON.parse(execFileSync(ffprobe,['-v','error','-show_streams','-of','json',movie],{windowsHide:true})).streams;assert(streams.some(s=>s.codec_type==='video'&&/^yuva/.test(s.pix_fmt)&&s.nb_frames==='48'));
+ await post('/api/jobs/'+started.id+'/release',{});await post('/api/asset/v2/release',{assetId:asset.assetId});
+ const importedProject=await fetch(url+'/api/asset/v2/import',{method:'POST',headers:{Origin:url,'X-Motion-Token':info.token,'Content-Type':'application/zip'},body:fs.createReadStream(path.join(packageRoot,'ejemplos','proyecto.mgtproj')),duplex:'half'});const project=await importedProject.json();assert.equal(importedProject.status,201,JSON.stringify(project));assert.equal(project.hasAudio,true);
+ const startedProject=await post('/api/asset/v2/render',{assetId:project.assetId,profile:'preview',fps:24});let projectJob;for(let i=0;i<1200;i++){projectJob=await(await fetch(url+'/api/jobs/'+startedProject.id)).json();if(['done','error','cancelled'].includes(projectJob.status))break;await delay(50);}assert.equal(projectJob.status,'done',JSON.stringify(projectJob));
+ const projectMovie=path.join(dataRoot,'project.mov');fs.writeFileSync(projectMovie,Buffer.from(await(await fetch(url+'/api/jobs/'+startedProject.id+'/download')).arrayBuffer()));const projectStreams=JSON.parse(execFileSync(ffprobe,['-v','error','-show_streams','-of','json',projectMovie],{windowsHide:true})).streams;assert(projectStreams.some(s=>s.codec_type==='video'&&/^yuva/.test(s.pix_fmt)));assert(projectStreams.some(s=>s.codec_type==='audio'&&s.codec_name==='aac'));
+ await post('/api/jobs/'+startedProject.id+'/release',{});await post('/api/asset/v2/release',{assetId:project.assetId});
+ console.log('Motor autónomo '+info.version+': traslado, inicio oculto, JSON/proyecto, alfa, audio y cierre verificados.');
+}finally{if(url&&info)await fetch(url+'/api/shutdown',{method:'POST',headers:{Origin:url,'X-Motion-Token':info.token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});child?.kill();if(path.resolve(dataRoot).startsWith(path.resolve(os.tmpdir())+path.sep))fs.rmSync(dataRoot,{recursive:true,force:true});}})().catch(error=>{console.error(error);process.exitCode=1;});

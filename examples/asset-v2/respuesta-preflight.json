@@ -1,0 +1,68 @@
+{
+  "assetId": "c18e3da1-f661-4436-8c18-76ab429dd5dd",
+  "contractVersion": 2,
+  "engineVersion": "1.6.4",
+  "sourceFormat": "mgt.json",
+  "sourceVersion": 3,
+  "name": "Tarjeta de ejemplo",
+  "recommended": {
+    "duration": 2,
+    "aspect": "horizontal",
+    "resolution": 1080
+  },
+  "profile": "preview",
+  "fps": 24,
+  "frames": 48,
+  "duration": 2,
+  "encodedDuration": 2,
+  "aspect": "horizontal",
+  "resolution": 480,
+  "width": 854,
+  "height": 480,
+  "alpha": true,
+  "hasAudio": false,
+  "streams": [
+    {
+      "kind": "video",
+      "codec": "prores_ks",
+      "pixelFormat": "yuva444p12le",
+      "alpha": true,
+      "colorSpace": "bt709",
+      "colorRange": "tv",
+      "width": 854,
+      "height": 480,
+      "fps": 24,
+      "frames": 48
+    }
+  ],
+  "parameters": [
+    {
+      "id": "composition",
+      "label": "Tarjeta de ejemplo",
+      "parameters": [
+        {
+          "id": "color",
+          "sourceId": "color",
+          "label": "Color",
+          "type": "color",
+          "default": "#ff0000",
+          "editable": true
+        },
+        {
+          "id": "title",
+          "sourceId": "title",
+          "label": "Título",
+          "type": "text",
+          "default": "Ejemplo MGT",
+          "editable": true
+        }
+      ]
+    }
+  ],
+  "overrides": {
+    "color": "#00ff00"
+  },
+  "dependencies": [],
+  "fingerprint": "c06192894503b71c2b6c4395d0e7419970411cd1e4d0d0074d4f907b33bbd5f4",
+  "warnings": []
+}

@@ -1,3 +1,9 @@
+# MGT 1.6.4 · duración propia de MGT y motor autónomo
+
+- Añade duración propia para los clips MGT sin modificar su duración visible ni el archivo `.mgt.json` original; vista previa y exportación comparten el cálculo de fotogramas.
+- Publica el editor portable y el motor autónomo como descargas separadas. El motor ofrece contratos locales de assets v1/v2; no se incluyen adaptadores para NLE.
+- Sincroniza el inventario de componentes y las notas actuales con la versión 1.6.4. Las entradas posteriores de este archivo conservan su contexto histórico.
+
 # MGT 1.5.2 - proyectos completos y assets MGT
 
 La linea de tiempo se organiza en pistas visuales y de audio, se pueden guardar y reabrir proyectos completos y se incorpora un contrato local para renderizar composiciones MGT como assets con transparencia. La especificacion del contrato esta en MGT-ASSET-CONTRACT.md.

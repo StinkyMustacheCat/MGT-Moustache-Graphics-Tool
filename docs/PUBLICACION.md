@@ -1,4 +1,10 @@
-# Preparacion de publicacion - MGT 1.5.2
+# Publicación de MGT 1.6.4
+
+La release estable [MGT 1.6.4](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/tag/v1.6.4) ofrece dos paquetes Windows x64: **Editor portable** para personas usuarias y **Engine autónomo** para desarrolladores de integraciones. Cada ZIP incluye su manifiesto SHA-256 interno y su checksum externo. El editor es la descarga recomendada para usar MGT; el motor proporciona una API local y no incluye adaptadores para DaVinci Resolve, Adobe Premiere Pro, Vegas Pro ni otros NLE.
+
+La fuente pública contiene el código del editor y del motor, pero no sus runtimes binarios ni conectores privados. Los avisos y las licencias incluidas en cada paquete se describen en `COMPONENTES.json` y `LICENSING.md`; esta documentación no constituye una auditoría legal independiente.
+
+## Notas históricas de la publicación 1.5.2
 
 El código fuente está publicado en [GitHub](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool). La release portable MGT 1.5.2 se distribuye por separado en [GitHub Releases](https://github.com/StinkyMustacheCat/MGT-Moustache-Graphics-Tool/releases/tag/v1.5.2). No se ha registrado una marca ni modificado la galería pública.
 

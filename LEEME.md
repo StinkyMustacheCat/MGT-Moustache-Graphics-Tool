@@ -1,4 +1,4 @@
-# MGT 1.5.2 · Windows x64
+# MGT 1.6.4 · Windows x64
 
 Descomprime el ZIP completo en una carpeta y abre `MGT.exe` (o `Iniciar MGT.cmd`). No ejecutes el programa dentro del ZIP.
 
@@ -6,8 +6,8 @@ La línea de tiempo tiene dos tipos de pista: Visual y Audio. Puedes añadir var
 
 «Guardar proyecto» crea un archivo `.mgtproj` autocontenido con línea de tiempo, ajustes, composiciones, medios incrustados y WAV utilizados. «Abrir proyecto» restaura ese estado; si falta un WAV, solicita reenlazarlo. Guarda el `.mgtproj` descargado como respaldo: no hay guardado automático.
 
-El editor conserva su exportación habitual MP4 a 60 FPS. Para integración con otros programas, el servidor local ofrece preflight y render de archivos `.mgt.json` completos a 15/24/30/60 FPS en MOV ProRes 4444 con transparencia, perfiles de vista ligera y final, y resolución independiente. Consulta `documentacion/MGT-ASSET-CONTRACT.md` para la API y sus límites. Prometheus aún debe implementar su adaptador; esta entrega no incorpora Web Bridge, transiciones MGT, controles de parámetros externos, keyframes avanzados ni chroma key. Debido a la reconstrucción de pistas, los proyectos de versiones anteriores pueden requerir ajustes manuales.
+El editor conserva su exportación habitual MP4 a 60 FPS. Para integraciones propias, el motor local ofrece contratos de assets v1/v2 para inspección, preflight y render a MOV ProRes 4444 con transparencia. Consulta `engine/docs/` para la API y sus límites. No se incluyen adaptadores para DaVinci Resolve, Adobe Premiere Pro, Vegas Pro ni otros NLE; cada aplicación anfitriona debe implementar y validar el suyo. Esta entrega no incorpora Web Bridge, transiciones MGT, controles de parámetros externos, keyframes avanzados ni chroma key. Debido a la reconstrucción de pistas, los proyectos de versiones anteriores pueden requerir ajustes manuales.
 
-Para detener MGT, usa `Detener MGT.cmd`. La documentación completa y las licencias están en `documentacion/`.
+Para detener MGT, usa `Detener MGT.cmd`. La documentación completa y las licencias están en `docs/`.
 
 Chromium puede mostrar un aviso por la opción `--no-sandbox`. Es una advertencia sobre el aislamiento de seguridad reducido del navegador, no necesariamente un fallo de inicio. Consulta `documentacion/ARRANQUE.md` antes de decidir si continuar.
